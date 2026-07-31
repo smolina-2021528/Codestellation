@@ -124,6 +124,8 @@ El comando `lint` ejecuta validaciones internas de formato y límites entre work
 
 El paquete `@codestellation/contracts` define los identificadores canónicos iniciales del MVP 1 para proyectos, fuentes, archivos fuente, revisiones y snapshots. Estos identificadores son strings serializables con marcas nominales de TypeScript, prefijos explícitos, validadores runtime y helpers de creación/parsing sin dependencia de almacenamiento concreto.
 
+El mismo paquete también define errores estructurados y diagnósticos serializables. Cada diagnóstico tiene versión de esquema, código estable, severidad, mensaje, bandera `retryable` y contexto seguro sanitizado antes de exponerse en logs, CLI, API o UI.
+
 ## Documentación del producto
 
 La documentación base del producto, su arquitectura y las reglas de continuidad están organizadas en:
@@ -137,6 +139,6 @@ La documentación base del producto, su arquitectura y las reglas de continuidad
 
 ## Estado
 
-La **Fase 1 — Bootstrap del monorepo** está completa y la **Fase 2 — Contratos y modelo canónico** ya inició. El workspace TypeScript ya está inicializado con tres aplicaciones y veinte paquetes compilables. La línea base de calidad valida formato, límites entre workspaces, typecheck estricto y ejecución de pruebas con Vitest. La integración continua ejecuta instalación, lint, typecheck, test y build en `main`, `develop` y ramas de feature. El paquete `@codestellation/contracts` ya define los identificadores base para proyectos, fuentes, archivos fuente, revisiones y snapshots. El siguiente paso es agregar errores estructurados y diagnósticos.
+La **Fase 1 — Bootstrap del monorepo** está completa y la **Fase 2 — Contratos y modelo canónico** ya inició. El workspace TypeScript ya está inicializado con tres aplicaciones y veinte paquetes compilables. La línea base de calidad valida formato, límites entre workspaces, typecheck estricto y ejecución de pruebas con Vitest. La integración continua ejecuta instalación, lint, typecheck, test y build en `main`, `develop` y ramas de feature. El paquete `@codestellation/contracts` ya define identificadores base, errores estructurados y diagnósticos serializables. El siguiente paso es definir el contrato canónico de nodos del grafo.
 
 > Comprender antes de cambiar. Conectar antes de generar. Actualizar sin perder contexto.

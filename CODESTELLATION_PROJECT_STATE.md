@@ -6,47 +6,45 @@
 
 - **Fecha de actualización:** 2026-07-31
 - **Branch activa:** `ft-mvp1`
-- **Último commit lógico:** `feat(contracts): define project source and snapshot identifiers`
+- **Último commit lógico:** `feat(contracts): define structured errors and diagnostics`
 - **Release objetivo:** Release 0.0 — Fundaciones / MVP 1
-- **Fase del roadmap:** Fase 2 iniciada; contratos base de identificadores listos
-- **Estado general:** stable scaffolding; quality, testing, CI and first contracts active
+- **Fase del roadmap:** Fase 2 en curso; identificadores, errores y diagnósticos base listos
+- **Estado general:** stable scaffolding; quality, testing, CI and core contracts active
 
 ## 2. Objetivo actual
 
-Construir los contratos canónicos compartidos antes de incorporar ingesta, escaneo, parsing, grafo, API, CLI o web. La prioridad inmediata es mantener tipos serializables, validables y desacoplados de cualquier persistencia concreta.
+Construir los contratos canónicos compartidos antes de incorporar ingesta, escaneo, parsing, grafo, API, CLI o web. La prioridad inmediata es mantener tipos serializables, validables, seguros para logs y desacoplados de cualquier persistencia concreta.
 
 ## 3. Último commit completado
 
-- **Commit:** `feat(contracts): define project source and snapshot identifiers`
-- **Resultado:** se agregaron los identificadores base del MVP 1 en `@codestellation/contracts`.
+- **Commit:** `feat(contracts): define structured errors and diagnostics`
+- **Resultado:** se agregaron errores estructurados y diagnósticos serializables en `@codestellation/contracts`.
 - **Paquete principal:** `packages/contracts`.
-- **Contratos definidos:** `ProjectId`, `SourceId`, `SourceFileId`, `SourceRevisionId` y `SnapshotId`.
-- **Formato:** strings serializables con prefijos explícitos: `project:`, `source:`, `file:`, `revision:` y `snapshot:`.
-- **Seguridad base:** los tokens rechazan valores vacíos, whitespace externo, espacios internos, segmentos `.` o `..`, backslashes y segmentos vacíos.
-- **Nominalidad:** las marcas de TypeScript evitan mezclar identificadores por accidente en código tipado.
-- **Helpers:** creación, parsing, type guards, serialización explícita y validación de tokens.
-- **Fuentes MVP 1:** `local-folder`, `zip-archive` y `git-repository`.
-- **Pruebas:** se agregó suite de tests para IDs válidos, inválidos, guards, source kinds e identidad de snapshots.
-- **Limitaciones:** todavía no hay errores estructurados, códigos de diagnóstico, esquema de grafo ni persistencia.
+- **Diagnósticos definidos:** `CodestellationDiagnostic`, `DiagnosticCode`, `DiagnosticSeverity`, `DiagnosticContext` y helpers de creación, parsing, guards y serialización.
+- **Errores definidos:** `CodestellationError`, `createCodestellationError`, `toCodestellationDiagnostic` y `toCodestellationError`.
+- **Formato:** objetos JSON-safe con `schemaVersion`, `code`, `severity`, `message`, `retryable`, `context` y `causeCode` opcional.
+- **Códigos base:** `CONTRACTS_INVALID_ARGUMENT`, `CONTRACTS_VALIDATION_FAILED` y `CONTRACTS_UNEXPECTED_ERROR`.
+- **Severidades:** `debug`, `info`, `warning`, `error` y `fatal`.
+- **Seguridad base:** el contexto se ordena, acepta solo claves seguras, elimina valores no serializables, recorta strings largos y redacta claves sensibles como `token`, `password`, `secret`, `authorization`, `cookie`, `credential` y `apiKey`.
+- **Pruebas:** se agregaron suites para serialización, validación de códigos, sanitización de contexto, guards runtime, conversión de errores conocidos y fallback seguro para errores desconocidos.
+- **Limitaciones:** todavía no hay contrato de nodos, contrato de edges, metadata de procedencia, esquema de grafo ni validación de grafos completos.
 
 ## 4. Próximo commit exacto
 
-- **Commit sugerido:** `feat(contracts): define structured errors and diagnostics`
-- **Objetivo:** definir errores serializables y diagnósticos estables para que los paquetes posteriores reporten fallas sin exponer secretos ni depender de clases internas.
+- **Commit sugerido:** `feat(graph-model): define canonical graph node contract`
+- **Objetivo:** definir el contrato canónico de nodos del grafo sin acoplarlo a almacenamiento, visualización o parser concreto.
 - **Archivos o paquetes probables:**
-  - `packages/contracts/src/errors.ts`;
-  - `packages/contracts/src/diagnostics.ts`;
-  - `packages/contracts/src/index.ts`;
-  - `packages/contracts/test/errors.test.ts`;
+  - `packages/graph-model/src/nodes.ts`;
+  - `packages/graph-model/src/index.ts`;
+  - `packages/graph-model/test/nodes.test.ts`;
   - `README.md`;
   - `CODESTELLATION_PROJECT_STATE.md`.
 - **Criterios esperados:**
-  - errores serializables;
-  - códigos estables;
-  - bandera `retryable`;
-  - severidad de diagnóstico;
-  - contexto seguro y sin secretos;
-  - pruebas de serialización y validación.
+  - tipos de nodo versionados;
+  - identificadores de nodo serializables;
+  - jerarquía inicial de proyecto, paquete, carpeta, archivo y símbolo;
+  - datos mínimos para visualización y análisis;
+  - sin dependencia de parser, store, API o UI.
 
 ## 5. Reglas activas para los próximos commits
 
@@ -86,7 +84,7 @@ Para este commit también es útil validar de forma focalizada:
 
 ```bash
 pnpm --filter @codestellation/contracts typecheck
-pnpm test -- packages/contracts/test/ids.test.ts
+pnpm test -- packages/contracts/test/diagnostics.test.ts packages/contracts/test/errors.test.ts
 ```
 
 ## 7. Riesgos conocidos
@@ -97,6 +95,7 @@ pnpm test -- packages/contracts/test/ids.test.ts
 - La línea base no usa ESLint ni Prettier; el formato se protege con un script propio mínimo.
 - La cobertura no tiene umbrales hasta que existan módulos funcionales.
 - Los IDs de archivos son identificadores canónicos; todavía no representan metadata completa de path, hash, lenguaje o contenido.
+- La sanitización de contexto evita exponer claves sensibles comunes, pero los paquetes consumidores deben seguir evitando enviar secretos en mensajes o contextos.
 
 ## 8. Archivos clave actuales
 
@@ -115,7 +114,11 @@ pnpm test -- packages/contracts/test/ids.test.ts
 - `docs/01_ARCHITECTURE_AND_COMPONENTS.md`
 - `docs/02_ENGINEERING_QUALITY.md`
 - `docs/04_AI_DEVELOPMENT_PLAYBOOK.md`
-- `packages/contracts/src/index.ts`
+- `packages/contracts/src/diagnostics.ts`
+- `packages/contracts/src/errors.ts`
 - `packages/contracts/src/ids.ts`
+- `packages/contracts/src/index.ts`
+- `packages/contracts/test/diagnostics.test.ts`
+- `packages/contracts/test/errors.test.ts`
 - `packages/contracts/test/ids.test.ts`
 - `packages/testing-fixtures/src/index.ts`
