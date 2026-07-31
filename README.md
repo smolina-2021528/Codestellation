@@ -112,11 +112,13 @@ pnpm boundaries:check
 pnpm build
 pnpm typecheck
 pnpm test
+pnpm coverage
+pnpm run ci:check
 ```
 
 En Windows, si `corepack enable` falla con `EPERM` intentando escribir en `C:\Program Files\nodejs`, no es necesario repetirlo si `pnpm` ya responde en la terminal. Si `pnpm` no existe, instalar pnpm con permisos adecuados o usar una terminal elevada antes de volver a ejecutar los comandos del proyecto.
 
-El comando `lint` ejecuta validaciones internas de formato y límites entre workspaces. El comando `test` está preparado en la raíz, pero el runner y las primeras utilidades de pruebas se incorporarán en el próximo commit de testing.
+El comando `lint` ejecuta validaciones internas de formato y límites entre workspaces. El comando `test` ejecuta Vitest sobre las suites ubicadas en `test/` dentro de aplicaciones, paquetes y scripts. El comando `coverage` genera reportes con el proveedor V8 y `ci:check` agrupa la validación local que luego usará la integración continua.
 
 ## Documentación del producto
 
@@ -125,12 +127,12 @@ La documentación base del producto, su arquitectura y las reglas de continuidad
 - [`docs/00_CODESTELLATION_MASTER_PLAN.md`](./docs/00_CODESTELLATION_MASTER_PLAN.md): visión, alcance, propuesta de valor, casos de uso, MVP y criterios del primer release útil.
 - [`docs/01_ARCHITECTURE_AND_COMPONENTS.md`](./docs/01_ARCHITECTURE_AND_COMPONENTS.md): límites del sistema, componentes, dependencias internas y flujos de indexación y contexto.
 - [`docs/04_AI_DEVELOPMENT_PLAYBOOK.md`](./docs/04_AI_DEVELOPMENT_PLAYBOOK.md): unidad de trabajo, reglas para desarrollo asistido por IA, validaciones y Definition of Done.
-- [`docs/02_ENGINEERING_QUALITY.md`](./docs/02_ENGINEERING_QUALITY.md): línea base de calidad, typecheck estricto, formato y límites entre workspaces.
+- [`docs/02_ENGINEERING_QUALITY.md`](./docs/02_ENGINEERING_QUALITY.md): línea base de calidad, typecheck estricto, formato, límites entre workspaces, pruebas y cobertura.
 - [`CODESTELLATION_PROJECT_STATE.md`](./CODESTELLATION_PROJECT_STATE.md): estado operativo breve, próximo commit exacto, riesgos y archivos clave.
 - [`CODESTELLATION_DECISIONS.md`](./CODESTELLATION_DECISIONS.md): índice y contenido de las decisiones arquitectónicas vigentes.
 
 ## Estado
 
-La **Fase 1 — Bootstrap del monorepo** está en progreso. El workspace TypeScript ya está inicializado con tres aplicaciones y veinte paquetes compilables. La línea base de calidad ya valida formato, límites entre workspaces y typecheck estricto. El siguiente paso es incorporar runner de pruebas y utilidades compartidas mediante el commit `test(tooling): add test runner and shared test utilities`.
+La **Fase 1 — Bootstrap del monorepo** está en progreso. El workspace TypeScript ya está inicializado con tres aplicaciones y veinte paquetes compilables. La línea base de calidad valida formato, límites entre workspaces, typecheck estricto y ejecución de pruebas con Vitest. El siguiente paso es agregar la línea base de integración continua mediante el commit `ci(repo): add continuous integration baseline`.
 
 > Comprender antes de cambiar. Conectar antes de generar. Actualizar sin perder contexto.

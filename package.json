@@ -14,11 +14,16 @@
     "lint": "node scripts/check-format.mjs && node scripts/check-workspace-boundaries.mjs",
     "format:check": "node scripts/check-format.mjs",
     "boundaries:check": "node scripts/check-workspace-boundaries.mjs",
-    "quality": "pnpm lint && pnpm typecheck",
-    "test": "pnpm --recursive --if-present run test",
+    "quality": "pnpm lint && pnpm typecheck && pnpm test",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest --passWithNoTests",
+    "coverage": "vitest run --coverage --passWithNoTests",
+    "ci:check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "typecheck": "pnpm --recursive --if-present run typecheck"
   },
   "devDependencies": {
-    "typescript": "7.0.2"
+    "@vitest/coverage-v8": "4.1.10",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
   }
 }
