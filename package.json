@@ -1,0 +1,20 @@
+{
+  "name": "codestellation",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local-first software knowledge graph and context engine for developers and AI agents.",
+  "type": "module",
+  "packageManager": "pnpm@11.14.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=11.0.0 <12.0.0"
+  },
+  "scripts": {
+    "build": "pnpm --recursive --if-present run build",
+    "test": "pnpm --recursive --if-present run test",
+    "typecheck": "pnpm --recursive --if-present run typecheck"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}

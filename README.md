@@ -57,6 +57,64 @@ El MVP deberá poder:
 
 El primer MVP no intentará soportar todos los lenguajes, inferir automáticamente todos los flujos de negocio, ejecutar código no confiable sin aislamiento, reemplazar un IDE completo ni convertirse en una plataforma general de gestión de proyectos.
 
+## Estructura inicial del monorepo
+
+```text
+codestellation/
+├── apps/
+│   ├── api/
+│   ├── cli/
+│   └── web/
+├── packages/
+│   ├── contracts/
+│   ├── graph-model/
+│   ├── source-ingestion/
+│   ├── repository-scanner/
+│   ├── parser-core/
+│   ├── parser-typescript/
+│   ├── analyzer-static/
+│   ├── analyzer-frameworks/
+│   ├── analyzer-semantic/
+│   ├── graph-builder/
+│   ├── graph-store/
+│   ├── search-index/
+│   ├── context-engine/
+│   ├── impact-engine/
+│   ├── snapshot-engine/
+│   ├── exporter/
+│   ├── agent-adapter/
+│   ├── config/
+│   ├── observability/
+│   └── testing-fixtures/
+├── package.json
+├── pnpm-workspace.yaml
+└── tsconfig.base.json
+```
+
+Todos los workspaces contienen únicamente scaffolding compilable. La lógica funcional se incorporará en commits posteriores respetando la dirección de dependencias documentada.
+
+## Desarrollo local
+
+### Requisitos
+
+- Node.js 22 o superior;
+- pnpm 11.14.0, fijado mediante `packageManager`;
+- TypeScript 7.0.2 como dependencia de desarrollo.
+
+### Comandos
+
+```bash
+pnpm --version
+pnpm install
+pnpm build
+pnpm typecheck
+pnpm test
+```
+
+En Windows, si `corepack enable` falla con `EPERM` intentando escribir en `C:\Program Files\nodejs`, no es necesario repetirlo si `pnpm` ya responde en la terminal. Si `pnpm` no existe, instalar pnpm con permisos adecuados o usar una terminal elevada antes de volver a ejecutar los comandos del proyecto.
+
+El comando `test` está preparado en la raíz, pero el runner y las primeras utilidades de pruebas se incorporarán en el Commit 006.
+
 ## Documentación del producto
 
 La documentación base del producto, su arquitectura y las reglas de continuidad están organizadas en:
@@ -69,6 +127,6 @@ La documentación base del producto, su arquitectura y las reglas de continuidad
 
 ## Estado
 
-La **Fase 0 — Descubrimiento y definición** está completa. La visión, la arquitectura inicial y el gobierno del proyecto ya están documentados. El siguiente paso es iniciar la **Fase 1 — Bootstrap del monorepo** mediante el commit `chore(repo): initialize codestellation monorepo`.
+La **Fase 1 — Bootstrap del monorepo** está en progreso. El workspace TypeScript ya está inicializado con tres aplicaciones y veinte paquetes compilables. El último ajuste corrige la instalación local fijando una versión publicable de TypeScript y aclarando el flujo de setup en Windows. El siguiente paso es configurar lint, formatting y validaciones de tipos mediante el commit `chore(quality): configure lint formatting and type checks`.
 
 > Comprender antes de cambiar. Conectar antes de generar. Actualizar sin perder contexto.
