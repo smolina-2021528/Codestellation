@@ -11,6 +11,10 @@
   },
   "scripts": {
     "build": "pnpm --recursive --if-present run build",
+    "lint": "node scripts/check-format.mjs && node scripts/check-workspace-boundaries.mjs",
+    "format:check": "node scripts/check-format.mjs",
+    "boundaries:check": "node scripts/check-workspace-boundaries.mjs",
+    "quality": "pnpm lint && pnpm typecheck",
     "test": "pnpm --recursive --if-present run test",
     "typecheck": "pnpm --recursive --if-present run typecheck"
   },
