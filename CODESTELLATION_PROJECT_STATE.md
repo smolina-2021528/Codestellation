@@ -6,44 +6,48 @@
 
 - **Fecha de actualización:** 2026-07-31
 - **Branch activa:** `ft-mvp1`
-- **Último commit lógico:** `feat(contracts): define structured errors and diagnostics`
+- **Último commit lógico:** `feat(graph-model): define canonical graph node contract`
 - **Release objetivo:** Release 0.0 — Fundaciones / MVP 1
-- **Fase del roadmap:** Fase 2 en curso; identificadores, errores y diagnósticos base listos
-- **Estado general:** stable scaffolding; quality, testing, CI and core contracts active
+- **Fase del roadmap:** Fase 2 en curso; nodos canónicos del grafo definidos
+- **Estado general:** stable scaffolding; quality, testing, CI, core contracts and graph node model active
 
 ## 2. Objetivo actual
 
-Construir los contratos canónicos compartidos antes de incorporar ingesta, escaneo, parsing, grafo, API, CLI o web. La prioridad inmediata es mantener tipos serializables, validables, seguros para logs y desacoplados de cualquier persistencia concreta.
+Construir el modelo canónico de grafo antes de incorporar ingesta, escaneo, parsing, builder, store, API, CLI o web. La prioridad inmediata es mantener contratos serializables, versionados, validables y libres de acoplamiento a persistencia o visualización concreta.
 
 ## 3. Último commit completado
 
-- **Commit:** `feat(contracts): define structured errors and diagnostics`
-- **Resultado:** se agregaron errores estructurados y diagnósticos serializables en `@codestellation/contracts`.
-- **Paquete principal:** `packages/contracts`.
-- **Diagnósticos definidos:** `CodestellationDiagnostic`, `DiagnosticCode`, `DiagnosticSeverity`, `DiagnosticContext` y helpers de creación, parsing, guards y serialización.
-- **Errores definidos:** `CodestellationError`, `createCodestellationError`, `toCodestellationDiagnostic` y `toCodestellationError`.
-- **Formato:** objetos JSON-safe con `schemaVersion`, `code`, `severity`, `message`, `retryable`, `context` y `causeCode` opcional.
-- **Códigos base:** `CONTRACTS_INVALID_ARGUMENT`, `CONTRACTS_VALIDATION_FAILED` y `CONTRACTS_UNEXPECTED_ERROR`.
-- **Severidades:** `debug`, `info`, `warning`, `error` y `fatal`.
-- **Seguridad base:** el contexto se ordena, acepta solo claves seguras, elimina valores no serializables, recorta strings largos y redacta claves sensibles como `token`, `password`, `secret`, `authorization`, `cookie`, `credential` y `apiKey`.
-- **Pruebas:** se agregaron suites para serialización, validación de códigos, sanitización de contexto, guards runtime, conversión de errores conocidos y fallback seguro para errores desconocidos.
-- **Limitaciones:** todavía no hay contrato de nodos, contrato de edges, metadata de procedencia, esquema de grafo ni validación de grafos completos.
+- **Commit:** `feat(graph-model): define canonical graph node contract`
+- **Resultado:** se agregó el contrato canónico inicial de nodos en `@codestellation/graph-model`.
+- **Paquete principal:** `packages/graph-model`.
+- **Archivo principal:** `packages/graph-model/src/nodes.ts`.
+- **Identificador agregado:** `GraphNodeId`, serializable con prefijo `node:` y validación runtime.
+- **Rutas agregadas:** `RepositoryPath`, siempre relativa a la raíz de la fuente y sin segmentos de traversal.
+- **Tipos de nodo MVP 1:** `project`, `package`, `folder`, `file` y `symbol`.
+- **Payloads definidos:** `ProjectGraphNode`, `PackageGraphNode`, `FolderGraphNode`, `FileGraphNode` y `SymbolGraphNode`.
+- **Metadata común:** `schemaVersion`, `id`, `kind`, `parentId`, `display` y `analysis`.
+- **Metadata visual mínima:** `label`, `subtitle` y `description`.
+- **Metadata de análisis mínima:** `tags` y `facets` ordenables y serializables.
+- **Datos técnicos iniciales:** package manager, lenguaje fuente, extensión, conteo de líneas, tipo de símbolo, tipo de export y rango fuente.
+- **Validación:** guards runtime, normalización serializable, validación de jerarquía mínima y validación de rangos fuente.
+- **Pruebas:** se agregaron pruebas para IDs, rutas, nodos por tipo, normalización y rechazos de payloads inválidos.
+- **Limitaciones:** todavía no hay contrato de relaciones, procedencia/confianza, esquema completo de grafo ni validación cruzada entre nodos y edges.
 
 ## 4. Próximo commit exacto
 
-- **Commit sugerido:** `feat(graph-model): define canonical graph node contract`
-- **Objetivo:** definir el contrato canónico de nodos del grafo sin acoplarlo a almacenamiento, visualización o parser concreto.
+- **Commit sugerido:** `feat(graph-model): define canonical graph edge contract`
+- **Objetivo:** definir el contrato canónico de relaciones del grafo sin acoplarlo a almacenamiento, visualización o parser concreto.
 - **Archivos o paquetes probables:**
-  - `packages/graph-model/src/nodes.ts`;
+  - `packages/graph-model/src/edges.ts`;
   - `packages/graph-model/src/index.ts`;
-  - `packages/graph-model/test/nodes.test.ts`;
+  - `packages/graph-model/test/edges.test.ts`;
   - `README.md`;
   - `CODESTELLATION_PROJECT_STATE.md`.
 - **Criterios esperados:**
-  - tipos de nodo versionados;
-  - identificadores de nodo serializables;
-  - jerarquía inicial de proyecto, paquete, carpeta, archivo y símbolo;
-  - datos mínimos para visualización y análisis;
+  - tipos de edge versionados;
+  - identificadores de edge serializables;
+  - relaciones iniciales como contiene, importa, exporta, declara, llama, referencia y depende de;
+  - direccionalidad explícita;
   - sin dependencia de parser, store, API o UI.
 
 ## 5. Reglas activas para los próximos commits
@@ -83,8 +87,8 @@ pnpm build
 Para este commit también es útil validar de forma focalizada:
 
 ```bash
-pnpm --filter @codestellation/contracts typecheck
-pnpm test -- packages/contracts/test/diagnostics.test.ts packages/contracts/test/errors.test.ts
+pnpm --filter @codestellation/graph-model typecheck
+pnpm test -- packages/graph-model/test/nodes.test.ts
 ```
 
 ## 7. Riesgos conocidos
@@ -94,8 +98,8 @@ pnpm test -- packages/contracts/test/diagnostics.test.ts packages/contracts/test
 - El boundary checker todavía es intencionalmente simple y puede necesitar mejoras cuando aparezcan imports de subpaths.
 - La línea base no usa ESLint ni Prettier; el formato se protege con un script propio mínimo.
 - La cobertura no tiene umbrales hasta que existan módulos funcionales.
-- Los IDs de archivos son identificadores canónicos; todavía no representan metadata completa de path, hash, lenguaje o contenido.
-- La sanitización de contexto evita exponer claves sensibles comunes, pero los paquetes consumidores deben seguir evitando enviar secretos en mensajes o contextos.
+- Los IDs de nodos son identificadores canónicos; todavía no garantizan unicidad global contra un store porque no existe persistencia.
+- La validación de nodos verifica payloads individuales, pero todavía no valida consistencia cruzada con un grafo completo.
 
 ## 8. Archivos clave actuales
 
@@ -121,4 +125,7 @@ pnpm test -- packages/contracts/test/diagnostics.test.ts packages/contracts/test
 - `packages/contracts/test/diagnostics.test.ts`
 - `packages/contracts/test/errors.test.ts`
 - `packages/contracts/test/ids.test.ts`
+- `packages/graph-model/src/index.ts`
+- `packages/graph-model/src/nodes.ts`
+- `packages/graph-model/test/nodes.test.ts`
 - `packages/testing-fixtures/src/index.ts`

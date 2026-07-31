@@ -126,6 +126,10 @@ El paquete `@codestellation/contracts` define los identificadores canónicos ini
 
 El mismo paquete también define errores estructurados y diagnósticos serializables. Cada diagnóstico tiene versión de esquema, código estable, severidad, mensaje, bandera `retryable` y contexto seguro sanitizado antes de exponerse en logs, CLI, API o UI.
 
+## Modelo de grafo base
+
+El paquete `@codestellation/graph-model` ya define el contrato canónico inicial de nodos del grafo. Los nodos son serializables, versionados y desacoplados de parser, almacenamiento, API y UI. El MVP 1 reconoce nodos de proyecto, paquete, carpeta, archivo y símbolo, con identificadores `node:`, rutas relativas seguras, metadata mínima de visualización y facetas de análisis.
+
 ## Documentación del producto
 
 La documentación base del producto, su arquitectura y las reglas de continuidad están organizadas en:
@@ -139,6 +143,6 @@ La documentación base del producto, su arquitectura y las reglas de continuidad
 
 ## Estado
 
-La **Fase 1 — Bootstrap del monorepo** está completa y la **Fase 2 — Contratos y modelo canónico** ya inició. El workspace TypeScript ya está inicializado con tres aplicaciones y veinte paquetes compilables. La línea base de calidad valida formato, límites entre workspaces, typecheck estricto y ejecución de pruebas con Vitest. La integración continua ejecuta instalación, lint, typecheck, test y build en `main`, `develop` y ramas de feature. El paquete `@codestellation/contracts` ya define identificadores base, errores estructurados y diagnósticos serializables. El siguiente paso es definir el contrato canónico de nodos del grafo.
+La **Fase 1 — Bootstrap del monorepo** está completa y la **Fase 2 — Contratos y modelo canónico** continúa. El workspace TypeScript ya está inicializado con tres aplicaciones y veinte paquetes compilables. La línea base de calidad valida formato, límites entre workspaces, typecheck estricto y ejecución de pruebas con Vitest. La integración continua ejecuta instalación, lint, typecheck, test y build en `main`, `develop` y ramas de feature. El paquete `@codestellation/contracts` ya define identificadores base, errores estructurados y diagnósticos serializables. El paquete `@codestellation/graph-model` ya define nodos canónicos para proyecto, paquete, carpeta, archivo y símbolo. El siguiente paso es definir el contrato canónico de relaciones del grafo.
 
 > Comprender antes de cambiar. Conectar antes de generar. Actualizar sin perder contexto.
