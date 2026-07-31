@@ -6,49 +6,51 @@
 
 - **Fecha de actualización:** 2026-07-31
 - **Branch activa:** `ft-mvp1`
-- **Último commit lógico:** `feat(graph-model): define canonical graph node contract`
+- **Último commit lógico:** `feat(graph-model): define canonical graph edge contract`
 - **Release objetivo:** Release 0.0 — Fundaciones / MVP 1
-- **Fase del roadmap:** Fase 2 en curso; nodos canónicos del grafo definidos
-- **Estado general:** stable scaffolding; quality, testing, CI, core contracts and graph node model active
+- **Fase del roadmap:** Fase 2 en curso; nodos y relaciones canónicas del grafo definidos
+- **Estado general:** stable scaffolding; quality, testing, CI, core contracts and base graph model active
 
 ## 2. Objetivo actual
 
-Construir el modelo canónico de grafo antes de incorporar ingesta, escaneo, parsing, builder, store, API, CLI o web. La prioridad inmediata es mantener contratos serializables, versionados, validables y libres de acoplamiento a persistencia o visualización concreta.
+Construir el modelo canónico de grafo antes de incorporar ingesta, escaneo, parsing, builder, store, API, CLI o web. La prioridad inmediata es completar metadata común de procedencia y confianza para que nodos y relaciones puedan distinguir evidencia confirmada, inferencias y validaciones humanas sin depender de almacenamiento o UI.
 
 ## 3. Último commit completado
 
-- **Commit:** `feat(graph-model): define canonical graph node contract`
-- **Resultado:** se agregó el contrato canónico inicial de nodos en `@codestellation/graph-model`.
+- **Commit:** `feat(graph-model): define canonical graph edge contract`
+- **Resultado:** se agregó el contrato canónico inicial de relaciones en `@codestellation/graph-model`.
 - **Paquete principal:** `packages/graph-model`.
-- **Archivo principal:** `packages/graph-model/src/nodes.ts`.
-- **Identificador agregado:** `GraphNodeId`, serializable con prefijo `node:` y validación runtime.
-- **Rutas agregadas:** `RepositoryPath`, siempre relativa a la raíz de la fuente y sin segmentos de traversal.
-- **Tipos de nodo MVP 1:** `project`, `package`, `folder`, `file` y `symbol`.
-- **Payloads definidos:** `ProjectGraphNode`, `PackageGraphNode`, `FolderGraphNode`, `FileGraphNode` y `SymbolGraphNode`.
-- **Metadata común:** `schemaVersion`, `id`, `kind`, `parentId`, `display` y `analysis`.
-- **Metadata visual mínima:** `label`, `subtitle` y `description`.
-- **Metadata de análisis mínima:** `tags` y `facets` ordenables y serializables.
-- **Datos técnicos iniciales:** package manager, lenguaje fuente, extensión, conteo de líneas, tipo de símbolo, tipo de export y rango fuente.
-- **Validación:** guards runtime, normalización serializable, validación de jerarquía mínima y validación de rangos fuente.
-- **Pruebas:** se agregaron pruebas para IDs, rutas, nodos por tipo, normalización y rechazos de payloads inválidos.
-- **Limitaciones:** todavía no hay contrato de relaciones, procedencia/confianza, esquema completo de grafo ni validación cruzada entre nodos y edges.
+- **Archivo principal:** `packages/graph-model/src/edges.ts`.
+- **Identificador agregado:** `GraphEdgeId`, serializable con prefijo `edge:` y validación runtime.
+- **Relaciones MVP 1:** `contains`, `imports`, `exports`, `declares`, `calls`, `references` y `depends-on`.
+- **Direccionalidad:** campo explícito `direction`; en el esquema inicial todas las relaciones soportadas deben ser `directed`.
+- **Extremos:** cada edge enlaza `fromNodeId` y `toNodeId` usando `GraphNodeId` ya definido en el contrato de nodos.
+- **Atributos:** `attributes` acepta valores JSON serializables, finitos, con claves estables y orden determinístico.
+- **Ubicación fuente opcional:** `source.path` y `source.range` permiten registrar dónde se observó la relación sin acoplarla a parser, store, API o UI.
+- **Validación:** guards runtime, normalización serializable, rechazo de self-loops, endpoints inválidos, direcciones no permitidas, rutas inseguras y atributos no serializables.
+- **Pruebas:** se agregaron pruebas para IDs, guards, tipos de relación iniciales, source location, normalización de atributos y rechazos de payloads inválidos.
+- **Limitaciones:** todavía no hay metadata compartida de procedencia/confianza, esquema completo del grafo ni validación cruzada entre colecciones de nodos y edges.
 
 ## 4. Próximo commit exacto
 
-- **Commit sugerido:** `feat(graph-model): define canonical graph edge contract`
-- **Objetivo:** definir el contrato canónico de relaciones del grafo sin acoplarlo a almacenamiento, visualización o parser concreto.
+- **Commit sugerido:** `feat(graph-model): add provenance and confidence metadata`
+- **Objetivo:** definir metadata común de procedencia y confianza reutilizable por nodos y relaciones del grafo.
 - **Archivos o paquetes probables:**
+  - `packages/graph-model/src/provenance.ts`;
+  - `packages/graph-model/src/nodes.ts`;
   - `packages/graph-model/src/edges.ts`;
   - `packages/graph-model/src/index.ts`;
+  - `packages/graph-model/test/provenance.test.ts`;
+  - `packages/graph-model/test/nodes.test.ts`;
   - `packages/graph-model/test/edges.test.ts`;
   - `README.md`;
   - `CODESTELLATION_PROJECT_STATE.md`.
 - **Criterios esperados:**
-  - tipos de edge versionados;
-  - identificadores de edge serializables;
-  - relaciones iniciales como contiene, importa, exporta, declara, llama, referencia y depende de;
-  - direccionalidad explícita;
-  - sin dependencia de parser, store, API o UI.
+  - niveles de confianza `confirmed`, `probable`, `possible` y `human-verified`;
+  - score opcional entre 0 y 1;
+  - rationale opcional;
+  - registros de procedencia con productor, tipo y evidencia;
+  - sin dependencia de parser, store, API, UI o proveedor de IA.
 
 ## 5. Reglas activas para los próximos commits
 
@@ -88,7 +90,7 @@ Para este commit también es útil validar de forma focalizada:
 
 ```bash
 pnpm --filter @codestellation/graph-model typecheck
-pnpm test -- packages/graph-model/test/nodes.test.ts
+pnpm test -- packages/graph-model/test/edges.test.ts
 ```
 
 ## 7. Riesgos conocidos
@@ -98,8 +100,9 @@ pnpm test -- packages/graph-model/test/nodes.test.ts
 - El boundary checker todavía es intencionalmente simple y puede necesitar mejoras cuando aparezcan imports de subpaths.
 - La línea base no usa ESLint ni Prettier; el formato se protege con un script propio mínimo.
 - La cobertura no tiene umbrales hasta que existan módulos funcionales.
-- Los IDs de nodos son identificadores canónicos; todavía no garantizan unicidad global contra un store porque no existe persistencia.
-- La validación de nodos verifica payloads individuales, pero todavía no valida consistencia cruzada con un grafo completo.
+- Los IDs de nodos y edges son identificadores canónicos; todavía no garantizan unicidad global contra un store porque no existe persistencia.
+- La validación de nodos y edges verifica payloads individuales, pero todavía no valida consistencia cruzada de un grafo completo.
+- La metadata de procedencia y confianza todavía no forma parte de los contratos de nodos o edges.
 
 ## 8. Archivos clave actuales
 
@@ -125,7 +128,9 @@ pnpm test -- packages/graph-model/test/nodes.test.ts
 - `packages/contracts/test/diagnostics.test.ts`
 - `packages/contracts/test/errors.test.ts`
 - `packages/contracts/test/ids.test.ts`
+- `packages/graph-model/src/edges.ts`
 - `packages/graph-model/src/index.ts`
 - `packages/graph-model/src/nodes.ts`
+- `packages/graph-model/test/edges.test.ts`
 - `packages/graph-model/test/nodes.test.ts`
 - `packages/testing-fixtures/src/index.ts`
