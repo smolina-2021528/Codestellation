@@ -59,12 +59,13 @@ El primer MVP no intentará soportar todos los lenguajes, inferir automáticamen
 
 ## Documentación del producto
 
-La visión, el alcance funcional, la propuesta de valor, los casos de uso, el MVP y los criterios del primer release útil están definidos en:
+La documentación base del producto y su arquitectura inicial está organizada en:
 
-- [`docs/00_CODESTELLATION_MASTER_PLAN.md`](./docs/00_CODESTELLATION_MASTER_PLAN.md)
+- [`docs/00_CODESTELLATION_MASTER_PLAN.md`](./docs/00_CODESTELLATION_MASTER_PLAN.md): visión, alcance, propuesta de valor, casos de uso, MVP y criterios del primer release útil.
+- [`docs/01_ARCHITECTURE_AND_COMPONENTS.md`](./docs/01_ARCHITECTURE_AND_COMPONENTS.md): límites del sistema, componentes, dependencias internas y flujos de indexación y contexto.
 
 ## Estado
 
-Este repositorio se encuentra en la **Fase 0 — Descubrimiento y definición**. El siguiente paso es documentar los límites del sistema, sus componentes y los flujos principales de indexación y generación de contexto.
+Este repositorio se encuentra en la **Fase 0 — Descubrimiento y definición**. La visión y la arquitectura inicial ya están documentadas. El siguiente paso es establecer el gobierno del proyecto mediante el estado operativo, los registros de decisiones, las reglas para trabajo asistido por IA y la Definition of Done.
 
 > Comprender antes de cambiar. Conectar antes de generar. Actualizar sin perder contexto.
