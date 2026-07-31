@@ -59,13 +59,16 @@ El primer MVP no intentará soportar todos los lenguajes, inferir automáticamen
 
 ## Documentación del producto
 
-La documentación base del producto y su arquitectura inicial está organizada en:
+La documentación base del producto, su arquitectura y las reglas de continuidad están organizadas en:
 
 - [`docs/00_CODESTELLATION_MASTER_PLAN.md`](./docs/00_CODESTELLATION_MASTER_PLAN.md): visión, alcance, propuesta de valor, casos de uso, MVP y criterios del primer release útil.
 - [`docs/01_ARCHITECTURE_AND_COMPONENTS.md`](./docs/01_ARCHITECTURE_AND_COMPONENTS.md): límites del sistema, componentes, dependencias internas y flujos de indexación y contexto.
+- [`docs/04_AI_DEVELOPMENT_PLAYBOOK.md`](./docs/04_AI_DEVELOPMENT_PLAYBOOK.md): unidad de trabajo, reglas para desarrollo asistido por IA, validaciones y Definition of Done.
+- [`CODESTELLATION_PROJECT_STATE.md`](./CODESTELLATION_PROJECT_STATE.md): estado operativo breve, próximo commit exacto, riesgos y archivos clave.
+- [`CODESTELLATION_DECISIONS.md`](./CODESTELLATION_DECISIONS.md): índice y contenido de las decisiones arquitectónicas vigentes.
 
 ## Estado
 
-Este repositorio se encuentra en la **Fase 0 — Descubrimiento y definición**. La visión y la arquitectura inicial ya están documentadas. El siguiente paso es establecer el gobierno del proyecto mediante el estado operativo, los registros de decisiones, las reglas para trabajo asistido por IA y la Definition of Done.
+La **Fase 0 — Descubrimiento y definición** está completa. La visión, la arquitectura inicial y el gobierno del proyecto ya están documentados. El siguiente paso es iniciar la **Fase 1 — Bootstrap del monorepo** mediante el commit `chore(repo): initialize codestellation monorepo`.
 
 > Comprender antes de cambiar. Conectar antes de generar. Actualizar sin perder contexto.
