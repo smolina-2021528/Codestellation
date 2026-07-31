@@ -10,7 +10,8 @@ The baseline is intentionally small and deterministic:
 - A repository formatting guard catches whitespace drift and line-ending problems.
 - A workspace boundary guard protects the architectural dependency direction.
 - Vitest executes the shared test suites for apps, packages and scripts.
-- Coverage can be generated locally before CI is introduced.
+- Coverage can be generated locally without enforcing thresholds yet.
+- GitHub Actions executes the same core checks on remote pushes and pull requests.
 
 ## 2. Commands
 
@@ -94,7 +95,7 @@ Runs:
 3. `pnpm test`;
 4. `pnpm build`.
 
-This command prepares the exact validation sequence that the next CI commit should execute remotely.
+This command mirrors the validation sequence executed by the CI workflow, except that CI installs dependencies first with `pnpm install --frozen-lockfile`.
 
 ## 3. TypeScript baseline
 
@@ -129,7 +130,28 @@ Vitest is configured at the repository root. The testing baseline follows these 
 - `createFixtureTree` for deterministic file ordering and directory derivation;
 - `createRepositoryFixture` for named repository-like fixtures.
 
-## 5. Architecture layers
+
+## 5. Continuous integration baseline
+
+The CI workflow lives in `.github/workflows/ci.yml` and runs on GitHub Actions.
+
+It is intentionally minimal:
+
+- triggers on pushes to `main`, `develop`, `ft-*` and `feature/**` branches;
+- triggers on pull requests targeting `main`, `develop` or `ft-*` branches;
+- can be started manually through `workflow_dispatch`;
+- checks out the repository with read-only content permissions;
+- installs pnpm 11.14.0;
+- uses Node.js 22.x;
+- restores pnpm cache from `pnpm-lock.yaml`;
+- installs dependencies with `pnpm install --frozen-lockfile`;
+- executes `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` as separate observable steps.
+
+The workflow does not publish artifacts, deploy builds or run code from analyzed repositories. It only validates the Codestellation workspace itself.
+
+The repository must version `pnpm-lock.yaml` before CI can pass with `--frozen-lockfile`.
+
+## 6. Architecture layers
 
 The boundary checker uses this initial layer model:
 
@@ -145,11 +167,10 @@ The boundary checker uses this initial layer model:
 
 A workspace may depend on the same or lower layers. A lower layer may not depend on a higher layer.
 
-## 6. Explicit non-goals
+## 7. Explicit non-goals
 
 This commit does not add:
 
-- GitHub Actions or another CI provider;
 - ESLint or Prettier as dependencies;
 - a task orchestrator;
 - coverage thresholds;

@@ -118,7 +118,7 @@ pnpm run ci:check
 
 En Windows, si `corepack enable` falla con `EPERM` intentando escribir en `C:\Program Files\nodejs`, no es necesario repetirlo si `pnpm` ya responde en la terminal. Si `pnpm` no existe, instalar pnpm con permisos adecuados o usar una terminal elevada antes de volver a ejecutar los comandos del proyecto.
 
-El comando `lint` ejecuta validaciones internas de formato y límites entre workspaces. El comando `test` ejecuta Vitest sobre las suites ubicadas en `test/` dentro de aplicaciones, paquetes y scripts. El comando `coverage` genera reportes con el proveedor V8 y `ci:check` agrupa la validación local que luego usará la integración continua.
+El comando `lint` ejecuta validaciones internas de formato y límites entre workspaces. El comando `test` ejecuta Vitest sobre las suites ubicadas en `test/` dentro de aplicaciones, paquetes y scripts. El comando `coverage` genera reportes con el proveedor V8 y `ci:check` agrupa localmente la misma secuencia que ejecuta la integración continua.
 
 ## Documentación del producto
 
@@ -133,6 +133,6 @@ La documentación base del producto, su arquitectura y las reglas de continuidad
 
 ## Estado
 
-La **Fase 1 — Bootstrap del monorepo** está en progreso. El workspace TypeScript ya está inicializado con tres aplicaciones y veinte paquetes compilables. La línea base de calidad valida formato, límites entre workspaces, typecheck estricto y ejecución de pruebas con Vitest. El siguiente paso es agregar la línea base de integración continua mediante el commit `ci(repo): add continuous integration baseline`.
+La **Fase 1 — Bootstrap del monorepo** está completa. El workspace TypeScript ya está inicializado con tres aplicaciones y veinte paquetes compilables. La línea base de calidad valida formato, límites entre workspaces, typecheck estricto y ejecución de pruebas con Vitest. La integración continua ejecuta instalación, lint, typecheck, test y build en `main`, `develop` y ramas de feature. El siguiente paso es iniciar la Fase 2 con los contratos de identificadores del proyecto, fuentes y snapshots.
 
 > Comprender antes de cambiar. Conectar antes de generar. Actualizar sin perder contexto.
