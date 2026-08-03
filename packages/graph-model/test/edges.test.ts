@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   GRAPH_EDGE_SCHEMA_VERSION,
+  GRAPH_PROVENANCE_SCHEMA_VERSION,
   assertCanonicalGraphEdge,
   createGraphEdgeId,
   createGraphNodeId,
@@ -24,6 +25,32 @@ const projectNodeId = createGraphNodeId('project/codestellation');
 const fileNodeId = createGraphNodeId('file/packages/graph-model/src/edges.ts');
 const symbolNodeId = createGraphNodeId('symbol/packages/graph-model/src/edges.ts/CanonicalGraphEdge');
 
+
+function graphMetadata() {
+  return {
+    confidence: {
+      level: 'confirmed' as const,
+      score: 1,
+      rationale: 'Observed from deterministic graph edge test data.'
+    },
+    provenance: [
+      {
+        schemaVersion: GRAPH_PROVENANCE_SCHEMA_VERSION,
+        type: 'static-analysis' as const,
+        producer: {
+          name: 'graph-model-test'
+        },
+        evidence: [
+          {
+            type: 'static-rule' as const,
+            value: 'unit-test-fixture'
+          }
+        ]
+      }
+    ]
+  };
+}
+
 function baseEdge<const TKind extends CanonicalGraphEdge['kind']>(kind: TKind) {
   return {
     schemaVersion: GRAPH_EDGE_SCHEMA_VERSION,
@@ -32,7 +59,8 @@ function baseEdge<const TKind extends CanonicalGraphEdge['kind']>(kind: TKind) {
     fromNodeId: projectNodeId,
     toNodeId: fileNodeId,
     direction: 'directed' as const,
-    attributes: {}
+    attributes: {},
+    ...graphMetadata()
   };
 }
 
@@ -198,10 +226,16 @@ describe('canonical graph edges', () => {
       }
     };
 
+    const edgeWithoutProvenance = {
+      ...baseEdge('calls'),
+      provenance: []
+    };
+
     expect(() => assertCanonicalGraphEdge(invalidSourceNode)).toThrow(RangeError);
     expect(() => assertCanonicalGraphEdge(selfLoop)).toThrow(RangeError);
     expect(() => assertCanonicalGraphEdge(undirectedInitialEdge)).toThrow(RangeError);
     expect(() => assertCanonicalGraphEdge(unsafeAttributes)).toThrow(RangeError);
+    expect(() => assertCanonicalGraphEdge(edgeWithoutProvenance)).toThrow(RangeError);
   });
 
   it('rejects unsafe edge source paths and invalid source ranges', () => {

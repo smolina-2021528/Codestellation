@@ -1,3 +1,12 @@
+import {
+  assertGraphConfidence,
+  assertGraphProvenance,
+  toSerializableGraphConfidence,
+  toSerializableGraphProvenance,
+  type GraphConfidence,
+  type GraphProvenanceRecord
+} from './provenance.js';
+
 export declare const graphNodeIdBrand: unique symbol;
 export declare const repositoryPathBrand: unique symbol;
 
@@ -107,6 +116,8 @@ export interface GraphNodeBase {
   readonly parentId?: GraphNodeId;
   readonly display: GraphNodeDisplay;
   readonly analysis: GraphNodeAnalysisMetadata;
+  readonly confidence: GraphConfidence;
+  readonly provenance: readonly GraphProvenanceRecord[];
 }
 
 export interface ProjectGraphNode extends GraphNodeBase {
@@ -368,7 +379,9 @@ function toSerializableGraphNodeBase(node: GraphNodeBase): GraphNodeBase {
     id: parseGraphNodeId(node.id),
     kind: node.kind,
     display: toSerializableDisplay(node.display),
-    analysis: toSerializableAnalysis(node.analysis)
+    analysis: toSerializableAnalysis(node.analysis),
+    confidence: toSerializableGraphConfidence(node.confidence),
+    provenance: toSerializableGraphProvenance(node.provenance)
   };
 
   return withOptionalParentId(base, node.parentId);
@@ -425,6 +438,8 @@ function assertGraphNodeBase(candidate: Partial<CanonicalGraphNode>): void {
 
   assertGraphNodeDisplay(candidate.display);
   assertGraphNodeAnalysis(candidate.analysis);
+  assertGraphConfidence(candidate.confidence);
+  assertGraphProvenance(candidate.provenance);
 }
 
 function assertGraphNodeDisplay(value: unknown): asserts value is GraphNodeDisplay {

@@ -7,6 +7,14 @@ import {
   type SourceRange,
   type SourceRangePosition
 } from './nodes.js';
+import {
+  assertGraphConfidence,
+  assertGraphProvenance,
+  toSerializableGraphConfidence,
+  toSerializableGraphProvenance,
+  type GraphConfidence,
+  type GraphProvenanceRecord
+} from './provenance.js';
 
 export declare const graphEdgeIdBrand: unique symbol;
 
@@ -60,6 +68,8 @@ export interface GraphEdgeBase {
   readonly toNodeId: GraphNodeId;
   readonly direction: GraphEdgeDirection;
   readonly attributes: GraphEdgeAttributes;
+  readonly confidence: GraphConfidence;
+  readonly provenance: readonly GraphProvenanceRecord[];
   readonly source?: GraphEdgeSourceLocation;
 }
 
@@ -168,7 +178,9 @@ export function toSerializableGraphEdge(edge: CanonicalGraphEdge): CanonicalGrap
     fromNodeId: parseGraphNodeId(edge.fromNodeId),
     toNodeId: parseGraphNodeId(edge.toNodeId),
     direction: edge.direction,
-    attributes: toSerializableGraphEdgeAttributes(edge.attributes)
+    attributes: toSerializableGraphEdgeAttributes(edge.attributes),
+    confidence: toSerializableGraphConfidence(edge.confidence),
+    provenance: toSerializableGraphProvenance(edge.provenance)
   };
 
   return withOptionalSource(base, edge.source) as CanonicalGraphEdge;
@@ -220,6 +232,8 @@ export function assertCanonicalGraphEdge(value: unknown): asserts value is Canon
 
   assertDirectedInitialEdge(candidate.kind, candidate.direction);
   assertGraphEdgeAttributes(candidate.attributes);
+  assertGraphConfidence(candidate.confidence);
+  assertGraphProvenance(candidate.provenance);
 
   if (candidate.source !== undefined) {
     assertGraphEdgeSourceLocation(candidate.source);

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   GRAPH_NODE_SCHEMA_VERSION,
+  GRAPH_PROVENANCE_SCHEMA_VERSION,
   assertCanonicalGraphNode,
   createGraphNodeId,
   isCanonicalGraphNode,
@@ -16,6 +17,32 @@ import {
   type ProjectGraphNode,
   type SymbolGraphNode
 } from '../src/index.js';
+
+
+function graphMetadata() {
+  return {
+    confidence: {
+      level: 'confirmed' as const,
+      score: 1,
+      rationale: 'Observed from deterministic graph model test data.'
+    },
+    provenance: [
+      {
+        schemaVersion: GRAPH_PROVENANCE_SCHEMA_VERSION,
+        type: 'static-analysis' as const,
+        producer: {
+          name: 'graph-model-test'
+        },
+        evidence: [
+          {
+            type: 'static-rule' as const,
+            value: 'unit-test-fixture'
+          }
+        ]
+      }
+    ]
+  };
+}
 
 function baseNodeFields<const TKind extends CanonicalGraphNode['kind']>(
   kind: TKind,
@@ -37,7 +64,8 @@ function baseNodeFields<const TKind extends CanonicalGraphNode['kind']>(
           value: 'graph-model'
         }
       ]
-    }
+    },
+    ...graphMetadata()
   };
 }
 
@@ -84,6 +112,7 @@ describe('canonical graph nodes', () => {
         tags: ['product'],
         facets: []
       },
+      ...graphMetadata(),
       project: {
         name: 'Codestellation'
       }
@@ -171,6 +200,7 @@ describe('canonical graph nodes', () => {
           }
         ]
       },
+      ...graphMetadata(),
       project: {
         name: ' Codestellation '
       }
@@ -196,6 +226,7 @@ describe('canonical graph nodes', () => {
           }
         ]
       },
+      ...graphMetadata(),
       project: {
         name: 'Codestellation'
       }
@@ -239,8 +270,18 @@ describe('canonical graph nodes', () => {
       }
     };
 
+    const fileWithoutProvenance = {
+      ...baseNodeFields('file'),
+      provenance: [],
+      file: {
+        path: parseRepositoryPath('src/index.ts'),
+        language: 'typescript'
+      }
+    };
+
     expect(() => assertCanonicalGraphNode(projectWithParent)).toThrow(RangeError);
     expect(() => assertCanonicalGraphNode(fileWithoutParent)).toThrow(RangeError);
     expect(() => assertCanonicalGraphNode(symbolWithInvalidRange)).toThrow(RangeError);
+    expect(() => assertCanonicalGraphNode(fileWithoutProvenance)).toThrow(RangeError);
   });
 });
