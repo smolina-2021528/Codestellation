@@ -99,7 +99,8 @@ Todos los workspaces contienen únicamente scaffolding compilable. La lógica fu
 
 - Node.js 22 o superior;
 - pnpm 11.14.0, fijado mediante `packageManager`;
-- TypeScript 7.0.2 como dependencia de desarrollo.
+- TypeScript 7.0.2 como dependencia de desarrollo;
+- `@types/node` 22.20.1 para tipar APIs nativas de Node usadas por el resolver local.
 
 ### Comandos
 
@@ -132,7 +133,9 @@ El paquete `@codestellation/graph-model` ya define el contrato canónico inicial
 
 ## Ingesta de fuentes
 
-El paquete `@codestellation/source-ingestion` ya define los contratos de entrada versionados para las tres fuentes del MVP 1: carpeta local, archivo ZIP y repositorio Git público. Estos contratos validan rutas locales, patrones de inclusión/exclusión, URLs HTTPS de Git, referencias, límites de escaneo y opciones de seguridad sin leer archivos, extraer ZIPs, clonar repositorios ni ejecutar código externo. La configuración serializable mantiene `followSymlinks: false`, `executeRepositoryCode: false` e historial Git en modo `metadata-only` por defecto.
+El paquete `@codestellation/source-ingestion` ya define los contratos de entrada versionados para las tres fuentes del MVP 1: carpeta local, archivo ZIP y repositorio Git público. Estos contratos validan rutas locales, patrones de inclusión/exclusión, URLs HTTPS de Git, referencias, límites de escaneo y opciones de seguridad sin extraer ZIPs, clonar repositorios ni ejecutar código externo. La configuración serializable mantiene `followSymlinks: false`, `executeRepositoryCode: false` e historial Git en modo `metadata-only` por defecto.
+
+La ingesta segura ya puede resolver una fuente `local-folder` contra el filesystem en modo solo lectura. El resolver confirma que la ruta existe, que es un directorio, que no es un symlink raíz y devuelve metadata serializable con path solicitado, path absoluto, `realPath`, nombre del directorio, opciones efectivas y estado del filesystem. Todavía no escanea archivos internos, no calcula inventario, no construye nodos y no ejecuta código del repositorio analizado.
 
 ## Documentación del producto
 
@@ -147,6 +150,6 @@ La documentación base del producto, su arquitectura y las reglas de continuidad
 
 ## Estado
 
-La **Fase 1 — Bootstrap del monorepo** y la **Fase 2 — Contratos y modelo canónico** están completas para la línea base del MVP 1. La **Fase 3 — Ingesta segura** ya inició con contratos de entrada para carpeta local, ZIP y repositorio Git público. El workspace TypeScript ya está inicializado con tres aplicaciones y veinte paquetes compilables. La línea base de calidad valida formato, límites entre workspaces, typecheck estricto y ejecución de pruebas con Vitest. La integración continua ejecuta instalación, lint, typecheck, test y build en `main`, `develop` y ramas de feature. El siguiente paso es resolver carpetas locales contra el filesystem sin ejecutar código del repositorio analizado.
+La **Fase 1 — Bootstrap del monorepo** y la **Fase 2 — Contratos y modelo canónico** están completas para la línea base del MVP 1. La **Fase 3 — Ingesta segura** ya inició con contratos de entrada para carpeta local, ZIP y repositorio Git público, y ahora cuenta con resolución real de carpetas locales en modo solo lectura. El workspace TypeScript ya está inicializado con tres aplicaciones y veinte paquetes compilables. La línea base de calidad valida formato, límites entre workspaces, typecheck estricto y ejecución de pruebas con Vitest. La integración continua ejecuta instalación, lint, typecheck, test y build en `main`, `develop` y ramas de feature. El siguiente paso es crear el inventario normalizado de archivos fuente sin construir todavía el grafo.
 
 > Comprender antes de cambiar. Conectar antes de generar. Actualizar sin perder contexto.
