@@ -130,6 +130,10 @@ El mismo paquete también define errores estructurados y diagnósticos serializa
 
 El paquete `@codestellation/graph-model` ya define el contrato canónico inicial de nodos, relaciones y snapshots del grafo. Los nodos son serializables, versionados y desacoplados de parser, almacenamiento, API y UI. El MVP 1 reconoce nodos de proyecto, paquete, carpeta, archivo y símbolo, con identificadores `node:`, rutas relativas seguras, metadata mínima de visualización y facetas de análisis. Las relaciones usan identificadores `edge:`, declaran direccionalidad explícita y cubren vínculos iniciales como contiene, importa, exporta, declara, llama, referencia y depende de. Tanto nodos como relaciones incluyen metadata obligatoria de confianza y procedencia para diferenciar hechos confirmados, inferencias probables, posibilidades y validaciones humanas con evidencia rastreable. La validación de snapshots completos verifica versión de esquema, raíz de proyecto, unicidad global de IDs, padres existentes y endpoints de relaciones antes de persistir o exportar un grafo.
 
+## Ingesta de fuentes
+
+El paquete `@codestellation/source-ingestion` ya define los contratos de entrada versionados para las tres fuentes del MVP 1: carpeta local, archivo ZIP y repositorio Git público. Estos contratos validan rutas locales, patrones de inclusión/exclusión, URLs HTTPS de Git, referencias, límites de escaneo y opciones de seguridad sin leer archivos, extraer ZIPs, clonar repositorios ni ejecutar código externo. La configuración serializable mantiene `followSymlinks: false`, `executeRepositoryCode: false` e historial Git en modo `metadata-only` por defecto.
+
 ## Documentación del producto
 
 La documentación base del producto, su arquitectura y las reglas de continuidad están organizadas en:
@@ -143,6 +147,6 @@ La documentación base del producto, su arquitectura y las reglas de continuidad
 
 ## Estado
 
-La **Fase 1 — Bootstrap del monorepo** está completa y la **Fase 2 — Contratos y modelo canónico** continúa. El workspace TypeScript ya está inicializado con tres aplicaciones y veinte paquetes compilables. La línea base de calidad valida formato, límites entre workspaces, typecheck estricto y ejecución de pruebas con Vitest. La integración continua ejecuta instalación, lint, typecheck, test y build en `main`, `develop` y ramas de feature. El paquete `@codestellation/contracts` ya define identificadores base, errores estructurados y diagnósticos serializables. El paquete `@codestellation/graph-model` ya define nodos canónicos, relaciones canónicas iniciales, metadata compartida de procedencia/confianza y validación de snapshots completos. El siguiente paso es comenzar los contratos de ingesta de fuentes locales.
+La **Fase 1 — Bootstrap del monorepo** y la **Fase 2 — Contratos y modelo canónico** están completas para la línea base del MVP 1. La **Fase 3 — Ingesta segura** ya inició con contratos de entrada para carpeta local, ZIP y repositorio Git público. El workspace TypeScript ya está inicializado con tres aplicaciones y veinte paquetes compilables. La línea base de calidad valida formato, límites entre workspaces, typecheck estricto y ejecución de pruebas con Vitest. La integración continua ejecuta instalación, lint, typecheck, test y build en `main`, `develop` y ramas de feature. El siguiente paso es resolver carpetas locales contra el filesystem sin ejecutar código del repositorio analizado.
 
 > Comprender antes de cambiar. Conectar antes de generar. Actualizar sin perder contexto.
