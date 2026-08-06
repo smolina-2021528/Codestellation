@@ -141,9 +141,11 @@ El mismo paquete ya puede crear un inventario normalizado de archivos para una c
 
 ## Scanner de repositorios
 
-El paquete `@codestellation/repository-scanner` ya define contratos versionados para consumir un inventario normalizado compatible con `source-ingestion` y producir resultados de escaneo serializables. El contrato distingue estados `completed`, `partial` y `failed`; separa referencias de archivos candidatos e ignorados; modela motivos visibles de exclusión; conserva advertencias y errores con códigos `REPOSITORY_SCAN_*`; registra tiempos de ejecución; y valida que los conteos del resultado sean consistentes con el inventario de origen. En este punto el contrato se mantiene estructural para que `typecheck` no dependa de artefactos `dist` generados por otro workspace.
+El paquete `@codestellation/repository-scanner` ya define contratos versionados para consumir un inventario normalizado compatible con `source-ingestion` y producir resultados de escaneo serializables. El contrato distingue estados `completed`, `partial` y `failed`; separa referencias de archivos candidatos e ignorados; modela motivos visibles de exclusión; conserva advertencias y errores con códigos `REPOSITORY_SCAN_*`; registra tiempos de ejecución; y valida que los conteos del resultado sean consistentes con el inventario de origen. El contrato se mantiene estructural para que `typecheck` no dependa de artefactos `dist` generados por otro workspace.
 
-Este commit todavía no implementa la clasificación de archivos. El scanner no lee contenido, no calcula hashes, no detecta manifests, no infiere lenguajes o stacks, no invoca parsers y no construye nodos ni relaciones del grafo.
+El scanner ya puede clasificar de forma pura y determinística las entradas del inventario usando únicamente metadata disponible: path relativo normalizado, extensión, tamaño, timestamps y `kind` inicial. La clasificación marca como candidatos archivos `source`, `test`, `manifest` y `config`; ignora documentación, assets, binarios, minificados, generados, vendored y archivos potencialmente sensibles con motivos visibles; y conserva archivos `unknown` como no clasificados con warning. También preserva warnings y errores del inventario de origen dentro del resultado del scan sin leer contenido de archivos.
+
+El scanner todavía no calcula hashes, no detecta manifests de paquetes, no infiere lenguajes o stacks, no invoca parsers y no construye nodos ni relaciones del grafo.
 
 ## Documentación del producto
 

@@ -6,51 +6,51 @@
 
 - **Fecha de actualización:** 2026-08-05
 - **Branch activa:** `ft-mvp1`
-- **Último commit lógico:** `feat(repository-scanner): define scan result contracts`
-- **Número operativo:** Commit 018
+- **Último commit lógico:** `feat(repository-scanner): classify inventory files`
+- **Número operativo:** Commit 019
 - **Release objetivo:** Release 0.0 — Fundaciones / MVP 1
-- **Fase del roadmap:** Fase 4 iniciada con contratos del scanner
-- **Estado general:** stable scaffolding; normalized source inventory active; repository scan input and result contracts active; file classification not implemented yet
+- **Fase del roadmap:** Fase 4 en progreso con clasificación inicial del scanner
+- **Estado general:** stable scaffolding; normalized source inventory active; repository scan contracts active; deterministic metadata-only file classification active; manifest detection not implemented yet
 
 ## 2. Objetivo actual
 
-Establecer el límite público de `@codestellation/repository-scanner` antes de incorporar lógica funcional. El paquete ya puede representar y validar de forma serializable una entrada compatible con el inventario normalizado de `source-ingestion` y el resultado esperado de un escaneo, sin leer contenido de archivos, detectar manifests, ejecutar parsers ni construir el grafo.
+Convertir el inventario normalizado de una fuente local en un resultado de scanner mínimo, válido y determinístico. El scanner clasifica cada archivo usando únicamente metadata ya presente en el inventario, sin leer contenido completo de archivos, calcular hashes, detectar paquetes, parsear TypeScript ni construir nodos o relaciones del grafo.
 
 ## 3. Último commit completado
 
-- **Commit:** `feat(repository-scanner): define scan result contracts`
+- **Commit:** `feat(repository-scanner): classify inventory files`
 - **Paquete principal:** `packages/repository-scanner`.
-- **Archivo principal:** `packages/repository-scanner/src/scan-result.ts`.
-- **Entrada:** `RepositoryScanInput` versionado que contiene un inventario normalizado compatible con el contrato serializable de `source-ingestion`.
-- **Estados:** `completed`, `partial` y `failed` con reglas de consistencia explícitas.
-- **Archivos candidatos:** referencias versionadas por path relativo normalizado del inventario.
-- **Archivos ignorados:** referencias versionadas con motivo visible (`unsupported-kind`, `binary`, `generated`, `vendored`, `minified`, `sensitive` o `policy`) y mensaje seguro.
-- **Advertencias y errores:** colecciones separadas con códigos estables bajo el prefijo `REPOSITORY_SCAN_*`; los errores declaran `retryable`.
-- **Metadata:** timestamps de inicio y finalización, duración y resumen de archivos candidatos, ignorados, no clasificados, warnings y errores.
-- **Validación:** los serializers verifican versiones, rutas existentes en el inventario, duplicados, conflictos de disposición, conteos, timestamps, estados y consistencia básica del inventario de origen.
-- **Determinismo:** referencias e issues se serializan en orden estable.
-- **Dependencia interna:** `@codestellation/repository-scanner` no agrega dependencias internas en este commit; conserva compatibilidad estructural con el inventario normalizado para evitar depender de artefactos `dist` de otro workspace durante `typecheck`.
-- **Pruebas:** se agregó `packages/repository-scanner/test/scan-result.test.ts` para contratos, guards, serialización y rechazos de estados inconsistentes.
-- **Limitación principal:** todavía no existe una función que clasifique archivos o produzca automáticamente un `RepositoryScanResult`.
+- **Archivo principal nuevo:** `packages/repository-scanner/src/file-classifier.ts`.
+- **Contrato reutilizado:** `packages/repository-scanner/src/scan-result.ts` sigue siendo la fuente canónica de tipos, validadores, serializers y reglas de consistencia del resultado.
+- **Funciones públicas nuevas:** `classifyRepositoryScanInput` y `classifyRepositoryScanInventory`.
+- **Entrada:** inventario normalizado compatible con el contrato estructural serializable de `source-ingestion`.
+- **Candidatos:** archivos con `kind` inicial `source`, `test`, `manifest` o `config`.
+- **Ignorados:** documentación, assets, binarios, minificados, generados, vendored y archivos potencialmente sensibles, siempre con motivo visible (`unsupported-kind`, `binary`, `generated`, `vendored`, `minified` o `sensitive`) y mensaje seguro.
+- **No clasificados:** archivos con `kind` `unknown`; el resultado queda `partial` si ya había al menos un archivo clasificado, o `failed` con error `REPOSITORY_SCAN_NO_CLASSIFIABLE_FILES` si ningún archivo pudo clasificarse.
+- **Issues heredados:** warnings y errores del inventario de origen se preservan como issues `REPOSITORY_SCAN_SOURCE_INVENTORY_WARNING` o `REPOSITORY_SCAN_SOURCE_INVENTORY_ERROR`; si el path del issue no pertenece a `inventory.files`, el issue se conserva sin path para respetar el contrato del scan result.
+- **Metadata:** el clasificador acepta timestamps opcionales para pruebas determinísticas y calcula `durationMs` sin depender del filesystem.
+- **Determinismo:** el resultado final se normaliza mediante `toSerializableRepositoryScanResult`, que ordena referencias e issues y valida conteos.
+- **Pruebas:** se agregó `packages/repository-scanner/test/file-classifier.test.ts` para candidatos, ignorados por metadata, binarios, sensibles, desconocidos, estados parciales/fallidos e issues heredados.
+- **Limitación principal:** todavía no existe detección semántica de manifests ni resumen de estructura del repositorio; `package.json` solo es candidato porque el inventario ya lo marcó como `manifest`.
 
 ## 4. Próximo commit recomendado
 
-- **Commit sugerido:** `feat(repository-scanner): classify inventory files`
-- **Objetivo:** implementar una clasificación determinística y pura de cada entrada de `SourceFileInventory` como candidata, ignorada o no clasificada.
+- **Commit sugerido:** `feat(repository-scanner): detect package manifests`
+- **Objetivo:** detectar manifests de paquetes desde los archivos candidatos ya clasificados, comenzando por `package.json`, sin leer todavía dependencias completas ni construir grafo.
 - **Archivos probables:**
-  - `packages/repository-scanner/src/file-classifier.ts`;
+  - `packages/repository-scanner/src/package-manifest.ts`;
+  - `packages/repository-scanner/src/file-classifier.ts` si se necesita exponer metadata auxiliar mínima;
   - `packages/repository-scanner/src/index.ts`;
-  - `packages/repository-scanner/test/file-classifier.test.ts`;
+  - `packages/repository-scanner/test/package-manifest.test.ts`;
   - `README.md`;
   - `CODESTELLATION_PROJECT_STATE.md`.
 - **Criterios esperados:**
-  - consumir únicamente metadata ya disponible en el inventario;
-  - no leer contenido completo de archivos;
-  - no calcular hashes;
-  - no detectar todavía manifests ni paquetes;
-  - no parsear TypeScript;
-  - producir un `RepositoryScanResult` válido y determinístico;
-  - mantener visibles los motivos de exclusión y las advertencias heredadas del inventario.
+  - consumir el resultado clasificado del scanner;
+  - detectar manifests por path/nombre y metadata, no por lectura de contenido completo;
+  - no interpretar dependencias todavía;
+  - no resolver workspaces todavía;
+  - no inferir stack completo todavía;
+  - mantener resultados serializables, determinísticos y auditables.
 
 ## 5. Reglas activas para los próximos commits
 
@@ -76,11 +76,11 @@ pnpm build
 pnpm run ci:check
 ```
 
-Validación focalizada para el Commit 018:
+Validación focalizada para el Commit 019:
 
 ```bash
 pnpm --filter @codestellation/repository-scanner typecheck
-pnpm test -- packages/repository-scanner/test/scan-result.test.ts
+pnpm test -- packages/repository-scanner/test/scan-result.test.ts packages/repository-scanner/test/file-classifier.test.ts
 ```
 
 ## 7. Riesgos conocidos
@@ -93,6 +93,7 @@ pnpm test -- packages/repository-scanner/test/scan-result.test.ts
 - El matcher de globs del inventario cubre los patrones iniciales del MVP 1, pero no reemplaza por completo a minimatch.
 - Los tests de symlinks dependen de permisos del sistema operativo y deben seguir tolerando restricciones de Windows.
 - El inventario todavía no calcula hashes; esa responsabilidad sigue pendiente de decisión entre scanner y snapshots incrementales.
+- Las reglas de clasificación por nombre/extensión son heurísticas iniciales y deben seguir siendo visibles, configurables y auditables.
 - Los motivos de archivos ignorados ya forman parte de un contrato versionado; cualquier cambio incompatible debe incrementar la versión correspondiente.
 - El resultado del scanner conserva el inventario normalizado, incluyendo paths locales serializables; las capas de API y UI deberán evitar exponer rutas sensibles sin una política explícita.
 
@@ -124,4 +125,6 @@ pnpm test -- packages/repository-scanner/test/scan-result.test.ts
 - `packages/source-ingestion/src/local-folder.ts`
 - `packages/source-ingestion/src/file-inventory.ts`
 - `packages/repository-scanner/src/scan-result.ts`
+- `packages/repository-scanner/src/file-classifier.ts`
 - `packages/repository-scanner/test/scan-result.test.ts`
+- `packages/repository-scanner/test/file-classifier.test.ts`
