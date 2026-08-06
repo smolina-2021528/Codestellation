@@ -6,58 +6,56 @@
 
 - **Fecha de actualización:** 2026-08-05
 - **Branch activa:** `ft-mvp1`
-- **Último commit lógico:** `feat(source-ingestion): resolve local folder sources`
+- **Último commit lógico:** `feat(source-ingestion): create normalized source file inventory`
 - **Release objetivo:** Release 0.0 — Fundaciones / MVP 1
-- **Fase del roadmap:** Fase 3 en progreso; resolución local de fuentes iniciada
-- **Estado general:** stable scaffolding; quality, testing, CI, core contracts, graph model, source input contracts and local folder resolution active
+- **Fase del roadmap:** Fase 3 completada para ingesta local inicial
+- **Estado general:** stable scaffolding; quality, testing, CI, core contracts, graph model, source input contracts, local folder resolution and normalized local file inventory active
 
 ## 2. Objetivo actual
 
-Continuar la ingesta segura del MVP 1 sin ejecutar código del repositorio analizado. El proyecto ya puede tomar una entrada `local-folder` validada, resolverla contra el filesystem en modo solo lectura y devolver metadata serializable antes de escanear archivos, construir inventarios o generar nodos del grafo.
+Cerrar el primer bloque de ingesta segura del MVP 1. El proyecto ya puede validar una entrada `local-folder`, resolverla contra el filesystem en modo solo lectura y crear un inventario normalizado de archivos sin leer contenido completo, sin seguir symlinks y sin ejecutar código del repositorio analizado.
 
 ## 3. Último commit completado
 
-- **Commit:** `feat(source-ingestion): resolve local folder sources`
-- **Resultado:** se agregó resolución real de carpetas locales en `@codestellation/source-ingestion`.
+- **Commit:** `feat(source-ingestion): create normalized source file inventory`
+- **Resultado:** se agregó inventario normalizado de archivos para carpetas locales resueltas en `@codestellation/source-ingestion`.
 - **Paquete principal:** `packages/source-ingestion`.
-- **Archivo principal:** `packages/source-ingestion/src/local-folder.ts`.
-- **Entrada requerida:** `LocalFolderSourceInput` ya validada o serializable mediante los contratos de `input.ts`.
-- **Resolución:** convierte `path` relativo o absoluto en `absolutePath` normalizado y obtiene `realPath` mediante APIs nativas de Node.
-- **Filesystem:** usa operaciones de solo lectura (`lstat` y `realpath`) para confirmar existencia y tipo de directorio.
-- **Symlinks:** rechaza un symlink como raíz de la fuente local durante MVP 1.
-- **Salida:** `ResolvedLocalFolderSource` versionado con `requestedPath`, `absolutePath`, `realPath`, `directoryName`, metadata de filesystem y opciones efectivas de escaneo/seguridad.
-- **Errores:** `LocalFolderResolutionError` expone códigos estables para input inválido, ruta inexistente, ruta no directorio, symlink no permitido y fallo de realpath.
-- **Pruebas:** se agregaron pruebas para resolución exitosa, rutas faltantes, rutas no directorio, symlinks y códigos de error.
-- **Dependencias:** se agregó `@types/node` para tipar APIs nativas de filesystem, path, os y url sin introducir librerías de runtime.
-- **Limitaciones:** todavía no hay inventario de archivos, filtros include/exclude aplicados sobre contenido, lectura de archivos, ZIP extraction, clone Git, scanner, parser, graph builder, persistencia ni CLI funcional.
+- **Archivo principal:** `packages/source-ingestion/src/file-inventory.ts`.
+- **Entrada requerida:** `ResolvedLocalFolderSource` producido por `resolveLocalFolderSource`.
+- **Recorrido:** usa operaciones de solo lectura (`readdir` y `lstat`) para recorrer directorios y metadatos de entradas.
+- **Seguridad:** no sigue symlinks y registra advertencias cuando encuentra enlaces simbólicos dentro de la fuente.
+- **Filtros:** aplica patrones `include` y `exclude` de las opciones serializadas, incluyendo los excludes por defecto `.git/**`, `node_modules/**`, `dist/**`, `coverage/**`, `.next/**`, `.turbo/**` y `out/**`.
+- **Límites:** respeta `maxFileSizeBytes` excluyendo archivos grandes y `maxFiles` fallando de forma explícita si se supera el límite.
+- **Salida:** `SourceFileInventory` versionado con raíz, opciones efectivas, archivos ordenados, issues y resumen de conteos.
+- **Archivos:** cada entrada tiene path relativo normalizado, tamaño, `modifiedAt`, `createdAt` cuando está disponible, extensión y clasificación inicial (`source`, `test`, `manifest`, `config`, `documentation`, `asset`, `unknown`).
+- **Pruebas:** se agregaron pruebas para inventario determinístico, excludes por defecto, include/exclude personalizados, límite de tamaño, symlinks, `maxFiles` y guards.
+- **Limitaciones:** todavía no hay lectura de contenido completo, hash de archivos, ZIP extraction, clone Git, scanner semántico, parser TypeScript, graph builder, persistencia, API, web ni CLI funcional.
 
-## 4. Próximo commit exacto
+## 4. Punto de parada obligatorio del proyecto
 
-- **Commit sugerido:** `feat(source-ingestion): create normalized source file inventory`
-- **Objetivo:** recorrer una fuente local resuelta y crear un inventario normalizado de archivos fuente respetando límites de seguridad, excludes básicos y metadatos mínimos.
+Este punto de parada ya fue alcanzado después de completar `feat(source-ingestion): create normalized source file inventory`.
+
+- **Documento requerido:** `CODESTELLATION_MVP1_CONTINUACION_POST_INGESTION.md`
+- **Debe entregarse como:** archivo descargable separado, no como bloque largo de código en el chat.
+- **Contenido mínimo:** último commit aplicado, estado real, comandos que pasan, pendientes exactos, riesgos y próximo commit recomendado.
+- **Regla:** no continuar con nuevos commits funcionales hasta dejar este documento generado y disponible.
+
+## 5. Próximo commit recomendado después del documento de continuación
+
+- **Commit sugerido:** `feat(repository-scanner): define scan result contracts`
+- **Objetivo:** iniciar el paquete `@codestellation/repository-scanner` definiendo contratos de entrada y salida para consumir inventarios normalizados sin parsear todavía TypeScript ni construir el grafo.
 - **Archivos o paquetes probables:**
-  - `packages/source-ingestion/src/file-inventory.ts`;
-  - `packages/source-ingestion/src/local-folder.ts`;
-  - `packages/source-ingestion/src/index.ts`;
-  - `packages/source-ingestion/test/file-inventory.test.ts`;
+  - `packages/repository-scanner/src/index.ts`;
+  - `packages/repository-scanner/src/scan-result.ts`;
+  - `packages/repository-scanner/test/scan-result.test.ts`;
   - `README.md`;
   - `CODESTELLATION_PROJECT_STATE.md`.
 - **Criterios esperados:**
-  - recorrer directorios en modo solo lectura;
-  - ignorar directorios excluidos por defecto como `.git`, `node_modules`, `dist`, `coverage`, `.next`, `.turbo` y `out`;
-  - no seguir symlinks;
-  - producir paths relativos normalizados;
-  - incluir tamaño y timestamps disponibles;
-  - respetar `maxFiles` y `maxFileSizeBytes`;
-  - no leer contenido completo de archivos ni construir nodos del grafo.
-
-## 5. Punto de parada obligatorio del proyecto
-
-Al completar el próximo commit `feat(source-ingestion): create normalized source file inventory`, detener la secuencia normal de commits y generar un documento descargable de continuación/migración.
-
-- **Documento sugerido:** `CODESTELLATION_MVP1_CONTINUACION_POST_INGESTION.md`
-- **Debe incluir:** último commit aplicado, estado real, comandos que pasan, pendientes exactos, riesgos y próximo commit recomendado.
-- **Regla:** el documento debe entregarse como archivo descargable, no como bloque largo de código en el chat.
+  - aceptar un `SourceFileInventory` como entrada conceptual;
+  - definir estados de scan y metadatos serializables;
+  - separar errores, advertencias y archivos candidatos;
+  - no leer todavía contenido completo de archivos;
+  - no depender de parser, graph-builder, store, API ni web.
 
 ## 6. Reglas activas para los próximos commits
 
@@ -98,6 +96,7 @@ Para este commit también es útil validar de forma focalizada:
 ```bash
 pnpm --filter @codestellation/source-ingestion typecheck
 pnpm test -- packages/source-ingestion/test/local-folder.test.ts
+pnpm test -- packages/source-ingestion/test/file-inventory.test.ts
 ```
 
 ## 8. Riesgos conocidos
@@ -109,8 +108,9 @@ pnpm test -- packages/source-ingestion/test/local-folder.test.ts
 - La cobertura no tiene umbrales hasta que existan módulos funcionales.
 - La validación de snapshots completos todavía no impone reglas semánticas avanzadas, como que todo edge `contains` coincida con `parentId`; eso queda para el builder o reglas de análisis posteriores.
 - La metadata de procedencia y confianza ya es obligatoria para nodos y edges, por lo que los próximos builders deberán crear evidencia desde el primer momento.
-- El resolver local confirma el directorio raíz, pero todavía no aplica filtros de inventario ni detecta archivos relevantes.
+- El matcher de globs de inventario cubre los patrones iniciales del MVP 1, pero no pretende ser un reemplazo completo de minimatch.
 - Los tests de symlinks pueden depender de permisos del sistema operativo; la suite los maneja sin asumir que Windows permita crear symlinks en todos los entornos.
+- El inventario no calcula hash de archivos todavía; eso debe decidirse al iniciar scanner o snapshots incrementales.
 
 ## 9. Archivos clave actuales
 
@@ -138,3 +138,4 @@ pnpm test -- packages/source-ingestion/test/local-folder.test.ts
 - `packages/graph-model/src/schema.ts`
 - `packages/source-ingestion/src/input.ts`
 - `packages/source-ingestion/src/local-folder.ts`
+- `packages/source-ingestion/src/file-inventory.ts`
