@@ -6,51 +6,51 @@
 
 - **Fecha de actualización:** 2026-08-05
 - **Branch activa:** `ft-mvp1`
-- **Último commit lógico:** `feat(repository-scanner): classify inventory files`
-- **Número operativo:** Commit 019
+- **Último commit lógico:** `feat(repository-scanner): detect package manifests`
+- **Número operativo:** Commit 020
 - **Release objetivo:** Release 0.0 — Fundaciones / MVP 1
-- **Fase del roadmap:** Fase 4 en progreso con clasificación inicial del scanner
-- **Estado general:** stable scaffolding; normalized source inventory active; repository scan contracts active; deterministic metadata-only file classification active; manifest detection not implemented yet
+- **Fase del roadmap:** Fase 4 en progreso con detección inicial de manifests de paquetes
+- **Estado general:** stable scaffolding; normalized source inventory active; repository scan contracts active; deterministic metadata-only file classification active; Node package manifest detection active; repository structure summary not implemented yet
 
 ## 2. Objetivo actual
 
-Convertir el inventario normalizado de una fuente local en un resultado de scanner mínimo, válido y determinístico. El scanner clasifica cada archivo usando únicamente metadata ya presente en el inventario, sin leer contenido completo de archivos, calcular hashes, detectar paquetes, parsear TypeScript ni construir nodos o relaciones del grafo.
+Convertir el resultado clasificado del scanner en una detección inicial de manifests de paquetes, usando únicamente metadata ya presente en el inventario y referencias de archivos candidatos. La detección reconoce `package.json` como manifest de paquete Node sin leer contenido completo, interpretar dependencias, resolver workspaces, inferir stack completo, invocar parsers ni construir nodos o relaciones del grafo.
 
 ## 3. Último commit completado
 
-- **Commit:** `feat(repository-scanner): classify inventory files`
+- **Commit:** `feat(repository-scanner): detect package manifests`
 - **Paquete principal:** `packages/repository-scanner`.
-- **Archivo principal nuevo:** `packages/repository-scanner/src/file-classifier.ts`.
-- **Contrato reutilizado:** `packages/repository-scanner/src/scan-result.ts` sigue siendo la fuente canónica de tipos, validadores, serializers y reglas de consistencia del resultado.
-- **Funciones públicas nuevas:** `classifyRepositoryScanInput` y `classifyRepositoryScanInventory`.
-- **Entrada:** inventario normalizado compatible con el contrato estructural serializable de `source-ingestion`.
-- **Candidatos:** archivos con `kind` inicial `source`, `test`, `manifest` o `config`.
-- **Ignorados:** documentación, assets, binarios, minificados, generados, vendored y archivos potencialmente sensibles, siempre con motivo visible (`unsupported-kind`, `binary`, `generated`, `vendored`, `minified` o `sensitive`) y mensaje seguro.
-- **No clasificados:** archivos con `kind` `unknown`; el resultado queda `partial` si ya había al menos un archivo clasificado, o `failed` con error `REPOSITORY_SCAN_NO_CLASSIFIABLE_FILES` si ningún archivo pudo clasificarse.
-- **Issues heredados:** warnings y errores del inventario de origen se preservan como issues `REPOSITORY_SCAN_SOURCE_INVENTORY_WARNING` o `REPOSITORY_SCAN_SOURCE_INVENTORY_ERROR`; si el path del issue no pertenece a `inventory.files`, el issue se conserva sin path para respetar el contrato del scan result.
-- **Metadata:** el clasificador acepta timestamps opcionales para pruebas determinísticas y calcula `durationMs` sin depender del filesystem.
-- **Determinismo:** el resultado final se normaliza mediante `toSerializableRepositoryScanResult`, que ordena referencias e issues y valida conteos.
-- **Pruebas:** se agregó `packages/repository-scanner/test/file-classifier.test.ts` para candidatos, ignorados por metadata, binarios, sensibles, desconocidos, estados parciales/fallidos e issues heredados.
-- **Limitación principal:** todavía no existe detección semántica de manifests ni resumen de estructura del repositorio; `package.json` solo es candidato porque el inventario ya lo marcó como `manifest`.
+- **Archivo principal nuevo:** `packages/repository-scanner/src/package-manifest.ts`.
+- **Entrada:** `RepositoryScanResult` producido por la clasificación inicial del scanner.
+- **Función pública nueva:** `detectPackageManifestsFromScanResult`, con alias `detectPackageManifests`.
+- **Contrato nuevo:** `RepositoryPackageManifestDetectionResult`, serializable y versionado.
+- **Manifest soportado en MVP 1:** `package.json`, detectado como ecosistema `node` por método `metadata-path`.
+- **Raíz de paquete:** los manifests en la raíz del repositorio omiten `packageRootPath`; los manifests anidados exponen el directorio relativo como `packageRootPath`.
+- **Candidatos:** solo se inspeccionan archivos presentes en `sourceScan.candidateFiles` y cuyo inventario conserve `kind: "manifest"`.
+- **Unsupported:** los manifest candidates que no sean `package.json` se reportan como warning `REPOSITORY_SCAN_UNSUPPORTED_PACKAGE_MANIFEST`.
+- **Failure safe:** si el scan clasificado de origen está `failed`, la detección no intenta derivar manifests y devuelve error `REPOSITORY_SCAN_PACKAGE_MANIFEST_DETECTION_SKIPPED`.
+- **Determinismo:** el serializer ordena manifests e issues, valida paths, valida que todo manifest detectado sea candidato del scan fuente y verifica conteos de resumen.
+- **Pruebas:** se agregó `packages/repository-scanner/test/package-manifest.test.ts` para manifests raíz/anidados, candidatos unsupported, ignorados vendored, scans parciales/fallidos y validación del serializer.
+- **Limitación principal:** todavía no se lee `package.json`, no se extraen `name`, `version`, scripts, dependencias ni workspaces, y no se deriva un resumen estructural del repositorio.
 
 ## 4. Próximo commit recomendado
 
-- **Commit sugerido:** `feat(repository-scanner): detect package manifests`
-- **Objetivo:** detectar manifests de paquetes desde los archivos candidatos ya clasificados, comenzando por `package.json`, sin leer todavía dependencias completas ni construir grafo.
+- **Commit sugerido:** `feat(repository-scanner): derive repository structure summary`
+- **Objetivo:** resumir estructura de repositorio desde inventario, clasificación y manifests detectados, sin leer contenido completo ni construir nodos del grafo.
 - **Archivos probables:**
-  - `packages/repository-scanner/src/package-manifest.ts`;
-  - `packages/repository-scanner/src/file-classifier.ts` si se necesita exponer metadata auxiliar mínima;
+  - `packages/repository-scanner/src/repository-structure.ts`;
+  - `packages/repository-scanner/src/package-manifest.ts` si se necesita exponer metadata auxiliar mínima;
   - `packages/repository-scanner/src/index.ts`;
-  - `packages/repository-scanner/test/package-manifest.test.ts`;
+  - `packages/repository-scanner/test/repository-structure.test.ts`;
   - `README.md`;
   - `CODESTELLATION_PROJECT_STATE.md`.
 - **Criterios esperados:**
-  - consumir el resultado clasificado del scanner;
-  - detectar manifests por path/nombre y metadata, no por lectura de contenido completo;
-  - no interpretar dependencias todavía;
-  - no resolver workspaces todavía;
-  - no inferir stack completo todavía;
-  - mantener resultados serializables, determinísticos y auditables.
+  - consumir el resultado clasificado y la detección de manifests;
+  - reportar conteos y directorios principales de forma determinística;
+  - diferenciar raíz, paquetes anidados y carpetas relevantes;
+  - no leer contenido de archivos;
+  - no resolver workspaces ni dependencias todavía;
+  - no construir nodos ni edges reales del grafo.
 
 ## 5. Reglas activas para los próximos commits
 
@@ -76,11 +76,11 @@ pnpm build
 pnpm run ci:check
 ```
 
-Validación focalizada para el Commit 019:
+Validación focalizada para el Commit 020:
 
 ```bash
 pnpm --filter @codestellation/repository-scanner typecheck
-pnpm test -- packages/repository-scanner/test/scan-result.test.ts packages/repository-scanner/test/file-classifier.test.ts
+pnpm test -- packages/repository-scanner/test/scan-result.test.ts packages/repository-scanner/test/file-classifier.test.ts packages/repository-scanner/test/package-manifest.test.ts
 ```
 
 ## 7. Riesgos conocidos
@@ -94,8 +94,8 @@ pnpm test -- packages/repository-scanner/test/scan-result.test.ts packages/repos
 - Los tests de symlinks dependen de permisos del sistema operativo y deben seguir tolerando restricciones de Windows.
 - El inventario todavía no calcula hashes; esa responsabilidad sigue pendiente de decisión entre scanner y snapshots incrementales.
 - Las reglas de clasificación por nombre/extensión son heurísticas iniciales y deben seguir siendo visibles, configurables y auditables.
-- Los motivos de archivos ignorados ya forman parte de un contrato versionado; cualquier cambio incompatible debe incrementar la versión correspondiente.
-- El resultado del scanner conserva el inventario normalizado, incluyendo paths locales serializables; las capas de API y UI deberán evitar exponer rutas sensibles sin una política explícita.
+- La detección de manifests todavía no valida contenido de `package.json`; por ahora solo detecta presencia por path, nombre y metadata del inventario.
+- Los resultados del scanner conservan paths locales serializables; las capas de API y UI deberán evitar exponer rutas sensibles sin una política explícita.
 
 ## 8. Archivos clave actuales
 
@@ -126,5 +126,7 @@ pnpm test -- packages/repository-scanner/test/scan-result.test.ts packages/repos
 - `packages/source-ingestion/src/file-inventory.ts`
 - `packages/repository-scanner/src/scan-result.ts`
 - `packages/repository-scanner/src/file-classifier.ts`
+- `packages/repository-scanner/src/package-manifest.ts`
 - `packages/repository-scanner/test/scan-result.test.ts`
 - `packages/repository-scanner/test/file-classifier.test.ts`
+- `packages/repository-scanner/test/package-manifest.test.ts`
