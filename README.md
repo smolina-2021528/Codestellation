@@ -147,7 +147,9 @@ El scanner ya puede clasificar de forma pura y determinística las entradas del 
 
 El scanner ya detecta manifests de paquetes desde el resultado clasificado, también sin leer contenido. La detección inicial reconoce `package.json` como manifest de paquete Node mediante path, nombre de archivo y metadata del inventario; distingue manifests en la raíz y manifests anidados con `packageRootPath`; reporta otros manifest candidates como unsupported mediante warnings; y falla de forma segura si el scan clasificado de origen está en estado `failed`.
 
-El scanner todavía no calcula hashes, no lee `package.json`, no extrae nombre, versión, scripts, dependencias o workspaces, no deriva resumen estructural del repositorio, no infiere lenguajes o stacks, no invoca parsers y no construye nodos ni relaciones del grafo.
+El scanner ya deriva un resumen estructural inicial del repositorio desde el scan clasificado y los manifests detectados. El resumen reporta archivos raíz, directorios top-level, profundidad máxima, paquetes raíz/anidados, conteos por tipo de archivo, candidatos, ignorados, tamaño total y roles de directorio de forma determinística. Este paso sigue siendo metadata-only: no lee contenido completo, no interpreta `package.json`, no resuelve workspaces ni dependencias y no construye nodos del grafo.
+
+El scanner todavía no calcula hashes, no lee `package.json`, no extrae nombre, versión, scripts, dependencias o workspaces, no infiere lenguajes o stacks, no invoca parsers y no construye nodos ni relaciones del grafo.
 
 ## Documentación del producto
 
@@ -162,6 +164,6 @@ La documentación base del producto, su arquitectura y las reglas de continuidad
 
 ## Estado
 
-La **Fase 1 — Bootstrap del monorepo** y la **Fase 2 — Contratos y modelo canónico** están completas para la línea base del MVP 1. La **Fase 3 — Ingesta segura inicial** ya cuenta con contratos de entrada, resolución real de carpetas locales e inventario normalizado de archivos en modo solo lectura. La **Fase 4 — Scanner de repositorios** ya tiene contratos, clasificación inicial de archivos y detección metadata-only de `package.json`; todavía no existe lectura de manifests, parsing, resumen estructural ni construcción del grafo. El workspace TypeScript mantiene tres aplicaciones y veinte paquetes compilables, con validaciones de formato, límites entre workspaces, typecheck estricto, pruebas y CI.
+La **Fase 1 — Bootstrap del monorepo** y la **Fase 2 — Contratos y modelo canónico** están completas para la línea base del MVP 1. La **Fase 3 — Ingesta segura inicial** ya cuenta con contratos de entrada, resolución real de carpetas locales e inventario normalizado de archivos en modo solo lectura. La **Fase 4 — Scanner de repositorios** ya tiene contratos, clasificación inicial de archivos, detección metadata-only de `package.json` y resumen estructural inicial; todavía no existe lectura de manifests, parsing ni construcción del grafo. El workspace TypeScript mantiene tres aplicaciones y veinte paquetes compilables, con validaciones de formato, límites entre workspaces, typecheck estricto, pruebas y CI.
 
 > Comprender antes de cambiar. Conectar antes de generar. Actualizar sin perder contexto.
