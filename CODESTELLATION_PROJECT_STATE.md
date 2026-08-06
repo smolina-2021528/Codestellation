@@ -6,58 +6,53 @@
 
 - **Fecha de actualización:** 2026-08-05
 - **Branch activa:** `ft-mvp1`
-- **Último commit lógico:** `feat(source-ingestion): create normalized source file inventory`
+- **Último commit lógico:** `feat(repository-scanner): define scan result contracts`
+- **Número operativo:** Commit 018
 - **Release objetivo:** Release 0.0 — Fundaciones / MVP 1
-- **Fase del roadmap:** Fase 3 completada para ingesta local inicial
-- **Estado general:** stable scaffolding; quality, testing, CI, core contracts, graph model, source input contracts, local folder resolution and normalized local file inventory active
+- **Fase del roadmap:** Fase 4 iniciada con contratos del scanner
+- **Estado general:** stable scaffolding; normalized source inventory active; repository scan input and result contracts active; file classification not implemented yet
 
 ## 2. Objetivo actual
 
-Cerrar el primer bloque de ingesta segura del MVP 1. El proyecto ya puede validar una entrada `local-folder`, resolverla contra el filesystem en modo solo lectura y crear un inventario normalizado de archivos sin leer contenido completo, sin seguir symlinks y sin ejecutar código del repositorio analizado.
+Establecer el límite público de `@codestellation/repository-scanner` antes de incorporar lógica funcional. El paquete ya puede representar y validar de forma serializable una entrada compatible con el inventario normalizado de `source-ingestion` y el resultado esperado de un escaneo, sin leer contenido de archivos, detectar manifests, ejecutar parsers ni construir el grafo.
 
 ## 3. Último commit completado
 
-- **Commit:** `feat(source-ingestion): create normalized source file inventory`
-- **Resultado:** se agregó inventario normalizado de archivos para carpetas locales resueltas en `@codestellation/source-ingestion`.
-- **Paquete principal:** `packages/source-ingestion`.
-- **Archivo principal:** `packages/source-ingestion/src/file-inventory.ts`.
-- **Entrada requerida:** `ResolvedLocalFolderSource` producido por `resolveLocalFolderSource`.
-- **Recorrido:** usa operaciones de solo lectura (`readdir` y `lstat`) para recorrer directorios y metadatos de entradas.
-- **Seguridad:** no sigue symlinks y registra advertencias cuando encuentra enlaces simbólicos dentro de la fuente.
-- **Filtros:** aplica patrones `include` y `exclude` de las opciones serializadas, incluyendo los excludes por defecto `.git/**`, `node_modules/**`, `dist/**`, `coverage/**`, `.next/**`, `.turbo/**` y `out/**`.
-- **Límites:** respeta `maxFileSizeBytes` excluyendo archivos grandes y `maxFiles` fallando de forma explícita si se supera el límite.
-- **Salida:** `SourceFileInventory` versionado con raíz, opciones efectivas, archivos ordenados, issues y resumen de conteos.
-- **Archivos:** cada entrada tiene path relativo normalizado, tamaño, `modifiedAt`, `createdAt` cuando está disponible, extensión y clasificación inicial (`source`, `test`, `manifest`, `config`, `documentation`, `asset`, `unknown`).
-- **Pruebas:** se agregaron pruebas para inventario determinístico, excludes por defecto, include/exclude personalizados, límite de tamaño, symlinks, `maxFiles` y guards.
-- **Limitaciones:** todavía no hay lectura de contenido completo, hash de archivos, ZIP extraction, clone Git, scanner semántico, parser TypeScript, graph builder, persistencia, API, web ni CLI funcional.
+- **Commit:** `feat(repository-scanner): define scan result contracts`
+- **Paquete principal:** `packages/repository-scanner`.
+- **Archivo principal:** `packages/repository-scanner/src/scan-result.ts`.
+- **Entrada:** `RepositoryScanInput` versionado que contiene un inventario normalizado compatible con el contrato serializable de `source-ingestion`.
+- **Estados:** `completed`, `partial` y `failed` con reglas de consistencia explícitas.
+- **Archivos candidatos:** referencias versionadas por path relativo normalizado del inventario.
+- **Archivos ignorados:** referencias versionadas con motivo visible (`unsupported-kind`, `binary`, `generated`, `vendored`, `minified`, `sensitive` o `policy`) y mensaje seguro.
+- **Advertencias y errores:** colecciones separadas con códigos estables bajo el prefijo `REPOSITORY_SCAN_*`; los errores declaran `retryable`.
+- **Metadata:** timestamps de inicio y finalización, duración y resumen de archivos candidatos, ignorados, no clasificados, warnings y errores.
+- **Validación:** los serializers verifican versiones, rutas existentes en el inventario, duplicados, conflictos de disposición, conteos, timestamps, estados y consistencia básica del inventario de origen.
+- **Determinismo:** referencias e issues se serializan en orden estable.
+- **Dependencia interna:** `@codestellation/repository-scanner` no agrega dependencias internas en este commit; conserva compatibilidad estructural con el inventario normalizado para evitar depender de artefactos `dist` de otro workspace durante `typecheck`.
+- **Pruebas:** se agregó `packages/repository-scanner/test/scan-result.test.ts` para contratos, guards, serialización y rechazos de estados inconsistentes.
+- **Limitación principal:** todavía no existe una función que clasifique archivos o produzca automáticamente un `RepositoryScanResult`.
 
-## 4. Punto de parada obligatorio del proyecto
+## 4. Próximo commit recomendado
 
-Este punto de parada ya fue alcanzado después de completar `feat(source-ingestion): create normalized source file inventory`.
-
-- **Documento requerido:** `CODESTELLATION_MVP1_CONTINUACION_POST_INGESTION.md`
-- **Debe entregarse como:** archivo descargable separado, no como bloque largo de código en el chat.
-- **Contenido mínimo:** último commit aplicado, estado real, comandos que pasan, pendientes exactos, riesgos y próximo commit recomendado.
-- **Regla:** no continuar con nuevos commits funcionales hasta dejar este documento generado y disponible.
-
-## 5. Próximo commit recomendado después del documento de continuación
-
-- **Commit sugerido:** `feat(repository-scanner): define scan result contracts`
-- **Objetivo:** iniciar el paquete `@codestellation/repository-scanner` definiendo contratos de entrada y salida para consumir inventarios normalizados sin parsear todavía TypeScript ni construir el grafo.
-- **Archivos o paquetes probables:**
+- **Commit sugerido:** `feat(repository-scanner): classify inventory files`
+- **Objetivo:** implementar una clasificación determinística y pura de cada entrada de `SourceFileInventory` como candidata, ignorada o no clasificada.
+- **Archivos probables:**
+  - `packages/repository-scanner/src/file-classifier.ts`;
   - `packages/repository-scanner/src/index.ts`;
-  - `packages/repository-scanner/src/scan-result.ts`;
-  - `packages/repository-scanner/test/scan-result.test.ts`;
+  - `packages/repository-scanner/test/file-classifier.test.ts`;
   - `README.md`;
   - `CODESTELLATION_PROJECT_STATE.md`.
 - **Criterios esperados:**
-  - aceptar un `SourceFileInventory` como entrada conceptual;
-  - definir estados de scan y metadatos serializables;
-  - separar errores, advertencias y archivos candidatos;
-  - no leer todavía contenido completo de archivos;
-  - no depender de parser, graph-builder, store, API ni web.
+  - consumir únicamente metadata ya disponible en el inventario;
+  - no leer contenido completo de archivos;
+  - no calcular hashes;
+  - no detectar todavía manifests ni paquetes;
+  - no parsear TypeScript;
+  - producir un `RepositoryScanResult` válido y determinístico;
+  - mantener visibles los motivos de exclusión y las advertencias heredadas del inventario.
 
-## 6. Reglas activas para los próximos commits
+## 5. Reglas activas para los próximos commits
 
 - Entregar únicamente archivos nuevos o modificados, no el proyecto completo.
 - No entregar patches salvo solicitud explícita.
@@ -69,7 +64,7 @@ Este punto de parada ya fue alcanzado después de completar `feat(source-ingesti
 - Evitar lógica funcional fuera del alcance exacto del commit.
 - Preservar operación local-first y no ejecutar código de repositorios analizados.
 
-## 7. Comandos de validación vigentes
+## 6. Comandos de validación vigentes
 
 ```bash
 pnpm install
@@ -81,48 +76,37 @@ pnpm build
 pnpm run ci:check
 ```
 
-En CI se ejecuta la secuencia remota mínima:
+Validación focalizada para el Commit 018:
 
 ```bash
-pnpm install --frozen-lockfile
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
+pnpm --filter @codestellation/repository-scanner typecheck
+pnpm test -- packages/repository-scanner/test/scan-result.test.ts
 ```
 
-Para este commit también es útil validar de forma focalizada:
+## 7. Riesgos conocidos
 
-```bash
-pnpm --filter @codestellation/source-ingestion typecheck
-pnpm test -- packages/source-ingestion/test/local-folder.test.ts
-pnpm test -- packages/source-ingestion/test/file-inventory.test.ts
-```
-
-## 8. Riesgos conocidos
-
-- El proyecto depende de `pnpm-lock.yaml` para que CI pueda instalar con `--frozen-lockfile`; si el lockfile no fue generado localmente, debe generarse y versionarse antes de esperar CI verde.
-- TypeScript 7 puede requerir ajustes finos cuando se incorporen patrones más complejos.
+- El entorno debe tener pnpm 11.14.0 disponible para reproducir exactamente la validación del workspace y el lockfile.
+- TypeScript 7 puede requerir ajustes finos cuando se incorporen unions y validaciones más complejas.
 - El boundary checker todavía es intencionalmente simple y puede necesitar mejoras cuando aparezcan imports de subpaths.
 - La línea base no usa ESLint ni Prettier; el formato se protege con un script propio mínimo.
-- La cobertura no tiene umbrales hasta que existan módulos funcionales.
-- La validación de snapshots completos todavía no impone reglas semánticas avanzadas, como que todo edge `contains` coincida con `parentId`; eso queda para el builder o reglas de análisis posteriores.
-- La metadata de procedencia y confianza ya es obligatoria para nodos y edges, por lo que los próximos builders deberán crear evidencia desde el primer momento.
-- El matcher de globs de inventario cubre los patrones iniciales del MVP 1, pero no pretende ser un reemplazo completo de minimatch.
-- Los tests de symlinks pueden depender de permisos del sistema operativo; la suite los maneja sin asumir que Windows permita crear symlinks en todos los entornos.
-- El inventario no calcula hash de archivos todavía; eso debe decidirse al iniciar scanner o snapshots incrementales.
+- La cobertura no tiene umbrales hasta que existan más módulos funcionales.
+- El matcher de globs del inventario cubre los patrones iniciales del MVP 1, pero no reemplaza por completo a minimatch.
+- Los tests de symlinks dependen de permisos del sistema operativo y deben seguir tolerando restricciones de Windows.
+- El inventario todavía no calcula hashes; esa responsabilidad sigue pendiente de decisión entre scanner y snapshots incrementales.
+- Los motivos de archivos ignorados ya forman parte de un contrato versionado; cualquier cambio incompatible debe incrementar la versión correspondiente.
+- El resultado del scanner conserva el inventario normalizado, incluyendo paths locales serializables; las capas de API y UI deberán evitar exponer rutas sensibles sin una política explícita.
 
-## 9. Archivos clave actuales
+## 8. Archivos clave actuales
 
 - `README.md`
 - `CODESTELLATION_DECISIONS.md`
 - `CODESTELLATION_PROJECT_STATE.md`
 - `.github/workflows/ci.yml`
 - `package.json`
+- `pnpm-lock.yaml`
 - `pnpm-workspace.yaml`
 - `tsconfig.base.json`
 - `vitest.config.ts`
-- `.editorconfig`
 - `scripts/check-format.mjs`
 - `scripts/check-workspace-boundaries.mjs`
 - `docs/00_CODESTELLATION_MASTER_PLAN.md`
@@ -139,3 +123,5 @@ pnpm test -- packages/source-ingestion/test/file-inventory.test.ts
 - `packages/source-ingestion/src/input.ts`
 - `packages/source-ingestion/src/local-folder.ts`
 - `packages/source-ingestion/src/file-inventory.ts`
+- `packages/repository-scanner/src/scan-result.ts`
+- `packages/repository-scanner/test/scan-result.test.ts`

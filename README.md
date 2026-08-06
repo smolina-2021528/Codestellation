@@ -139,6 +139,12 @@ La ingesta segura ya puede resolver una fuente `local-folder` contra el filesyst
 
 El mismo paquete ya puede crear un inventario normalizado de archivos para una carpeta local resuelta. El inventario recorre directorios en modo solo lectura, no sigue symlinks, aplica patrones `include` y `exclude`, respeta `maxFiles` y `maxFileSizeBytes`, excluye directorios técnicos por defecto como `.git`, `node_modules`, `dist`, `.next`, `.turbo`, `coverage` y `out`, y devuelve rutas relativas normalizadas con tamaño, timestamps y una clasificación inicial del tipo de archivo. Todavía no lee el contenido completo de los archivos, no extrae ZIPs, no clona Git, no construye nodos del grafo y no ejecuta código del repositorio analizado.
 
+## Scanner de repositorios
+
+El paquete `@codestellation/repository-scanner` ya define contratos versionados para consumir un inventario normalizado compatible con `source-ingestion` y producir resultados de escaneo serializables. El contrato distingue estados `completed`, `partial` y `failed`; separa referencias de archivos candidatos e ignorados; modela motivos visibles de exclusión; conserva advertencias y errores con códigos `REPOSITORY_SCAN_*`; registra tiempos de ejecución; y valida que los conteos del resultado sean consistentes con el inventario de origen. En este punto el contrato se mantiene estructural para que `typecheck` no dependa de artefactos `dist` generados por otro workspace.
+
+Este commit todavía no implementa la clasificación de archivos. El scanner no lee contenido, no calcula hashes, no detecta manifests, no infiere lenguajes o stacks, no invoca parsers y no construye nodos ni relaciones del grafo.
+
 ## Documentación del producto
 
 La documentación base del producto, su arquitectura y las reglas de continuidad están organizadas en:
@@ -152,6 +158,6 @@ La documentación base del producto, su arquitectura y las reglas de continuidad
 
 ## Estado
 
-La **Fase 1 — Bootstrap del monorepo** y la **Fase 2 — Contratos y modelo canónico** están completas para la línea base del MVP 1. La **Fase 3 — Ingesta segura inicial** ya cuenta con contratos de entrada, resolución real de carpetas locales e inventario normalizado de archivos en modo solo lectura. El workspace TypeScript ya está inicializado con tres aplicaciones y veinte paquetes compilables. La línea base de calidad valida formato, límites entre workspaces, typecheck estricto y ejecución de pruebas con Vitest. La integración continua ejecuta instalación, lint, typecheck, test y build en `main`, `develop` y ramas de feature. El proyecto debe detenerse aquí para entregar el documento de continuación/migración post-ingesta antes de seguir con scanner, parser o grafo construido.
+La **Fase 1 — Bootstrap del monorepo** y la **Fase 2 — Contratos y modelo canónico** están completas para la línea base del MVP 1. La **Fase 3 — Ingesta segura inicial** ya cuenta con contratos de entrada, resolución real de carpetas locales e inventario normalizado de archivos en modo solo lectura. La siguiente fase ya inició con los contratos del `repository-scanner`, pero todavía no existe lógica de clasificación, detección de manifests, parsing ni construcción del grafo. El workspace TypeScript mantiene tres aplicaciones y veinte paquetes compilables, con validaciones de formato, límites entre workspaces, typecheck estricto, pruebas y CI.
 
 > Comprender antes de cambiar. Conectar antes de generar. Actualizar sin perder contexto.
