@@ -14,5 +14,9 @@
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@codestellation/parser-core": "workspace:*",
+    "typescript": "7.0.2"
   }
 }

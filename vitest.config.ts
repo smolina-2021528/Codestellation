@@ -1,6 +1,14 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
+const parserCoreSource = fileURLToPath(new URL('./packages/parser-core/src/index.ts', import.meta.url));
+
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@codestellation/parser-core': parserCoreSource
+    }
+  },
   test: {
     environment: 'node',
     globals: false,

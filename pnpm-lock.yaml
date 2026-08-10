@@ -55,7 +55,14 @@ importers:
 
   packages/parser-core: {}
 
-  packages/parser-typescript: {}
+  packages/parser-typescript:
+    dependencies:
+      '@codestellation/parser-core':
+        specifier: workspace:*
+        version: link:../parser-core
+      typescript:
+        specifier: 7.0.2
+        version: 7.0.2
 
   packages/repository-scanner: {}
 

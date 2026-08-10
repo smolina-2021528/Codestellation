@@ -151,11 +151,13 @@ El scanner ya deriva un resumen estructural inicial del repositorio desde el sca
 
 El scanner todavía no calcula hashes, no lee `package.json`, no extrae nombre, versión, scripts, dependencias o workspaces, no infiere lenguajes o stacks, no invoca parsers y no construye nodos ni relaciones del grafo.
 
-## Parser core
+## Parser core y parser TypeScript
 
 El paquete `@codestellation/parser-core` ya define los contratos base para parsers específicos. Estos contratos modelan referencias parseables de archivos, lenguajes iniciales del MVP (`typescript`, `tsx`, `javascript`, `jsx`, `json` y `unknown`), roles de archivo, rangos de texto con offset/línea/columna, descriptor de parser, diagnósticos `PARSER_*`, registros normalizados de símbolos, imports, exports y referencias, además de resultados serializables por archivo y por lote.
 
-El parser core todavía no implementa parsing de TypeScript/JavaScript, no lee contenido de archivos, no extrae AST real, no resuelve módulos, no analiza imports/exports y no construye nodos ni relaciones del grafo. Su objetivo actual es fijar el límite contractual para que `@codestellation/parser-typescript` pueda implementar el primer parser oficial en el siguiente commit.
+El paquete `@codestellation/parser-typescript` ya implementa el primer parser específico del MVP. El parser recibe un `ParserCoreParseableFile` y texto fuente provisto explícitamente por el pipeline local, usa TypeScript `createSourceFile` para TypeScript y TSX, devuelve `ParserCoreParseUnitResult`, reporta errores sintácticos como diagnósticos recuperables, extrae símbolos top-level básicos e imports/exports sintácticos básicos, y conserva operación filesystem-free desde el plugin.
+
+El parser todavía no lee archivos desde disco, no calcula hashes, no crea un `Program`, no usa type checker, no resuelve módulos, no analiza referencias profundas, no integra todavía resultados del scanner y no construye nodos ni relaciones del grafo. El siguiente límite recomendado es iniciar `@codestellation/analyzer-static` para consumir resultados parseados y preparar análisis de imports/exports sin resolverlos aún contra filesystem.
 
 ## Documentación del producto
 
@@ -170,6 +172,6 @@ La documentación base del producto, su arquitectura y las reglas de continuidad
 
 ## Estado
 
-La **Fase 1 — Bootstrap del monorepo** y la **Fase 2 — Contratos y modelo canónico** están completas para la línea base del MVP 1. La **Fase 3 — Ingesta segura inicial** ya cuenta con contratos de entrada, resolución real de carpetas locales e inventario normalizado de archivos en modo solo lectura. La **Fase 4 — Scanner de repositorios** ya tiene contratos, clasificación inicial de archivos, detección metadata-only de `package.json` y resumen estructural inicial. La **Fase 5 — Parser core** ya inició con contratos base para parsers, diagnósticos, rangos y resultados serializables; todavía no existe parser TypeScript funcional, lectura de contenido, análisis de imports/exports ni construcción del grafo. El workspace TypeScript mantiene tres aplicaciones y veinte paquetes compilables, con validaciones de formato, límites entre workspaces, typecheck estricto, pruebas y CI.
+La **Fase 1 — Bootstrap del monorepo** y la **Fase 2 — Contratos y modelo canónico** están completas para la línea base del MVP 1. La **Fase 3 — Ingesta segura inicial** ya cuenta con contratos de entrada, resolución real de carpetas locales e inventario normalizado de archivos en modo solo lectura. La **Fase 4 — Scanner de repositorios** ya tiene contratos, clasificación inicial de archivos, detección metadata-only de `package.json` y resumen estructural inicial. La **Fase 5 — Parsers** ya cuenta con contratos base de parser core y primer parser TypeScript/TSX sobre texto fuente provisto por el pipeline; todavía no existe integración scanner-parser, resolución de módulos, análisis estático profundo ni construcción del grafo. El workspace TypeScript mantiene tres aplicaciones y veinte paquetes compilables, con validaciones de formato, límites entre workspaces, typecheck estricto, pruebas y CI.
 
 > Comprender antes de cambiar. Conectar antes de generar. Actualizar sin perder contexto.
