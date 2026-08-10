@@ -4,56 +4,56 @@
 
 ## 1. Identificación
 
-- **Fecha de actualización:** 2026-08-05
+- **Fecha de actualización:** 2026-08-10
 - **Branch activa:** `ft-mvp1`
-- **Último commit lógico:** `feat(repository-scanner): derive repository structure summary`
-- **Número operativo:** Commit 021
+- **Último commit lógico:** `feat(parser-core): define parser contracts`
+- **Número operativo:** Commit 022
 - **Release objetivo:** Release 0.0 — Fundaciones / MVP 1
-- **Fase del roadmap:** Fase 4 en progreso con resumen estructural metadata-only del repositorio
-- **Estado general:** stable scaffolding; normalized source inventory active; repository scan contracts active; deterministic metadata-only file classification active; Node package manifest detection active; repository structure summary active; parser contracts not implemented yet
+- **Fase del roadmap:** Fase 5 iniciada con contratos base de parser core
+- **Estado general:** stable scaffolding; normalized source inventory active; repository scan contracts active; deterministic metadata-only file classification active; Node package manifest detection active; repository structure summary active; parser core contracts active; TypeScript parser implementation not started yet
 
 ## 2. Objetivo actual
 
-Derivar un resumen estructural inicial del repositorio desde el resultado clasificado del scanner y la detección de manifests de paquetes. El resumen usa únicamente metadata disponible del inventario, referencias de candidatos/ignorados y manifests detectados; no lee contenido completo, no interpreta `package.json`, no resuelve workspaces, no infiere dependencias, no invoca parsers y no construye nodos ni relaciones reales del grafo.
+Definir los contratos base del parser core para que parsers específicos puedan recibir referencias parseables de archivos, registrar diagnósticos, reportar rangos de texto y devolver resultados normalizados por archivo y por lote. El commit no implementa parsing real, no lee contenido de archivos, no genera AST, no resuelve imports/exports, no extrae símbolos reales y no construye nodos ni relaciones del grafo.
 
 ## 3. Último commit completado
 
-- **Commit:** `feat(repository-scanner): derive repository structure summary`
-- **Paquete principal:** `packages/repository-scanner`.
-- **Archivo principal nuevo:** `packages/repository-scanner/src/repository-structure.ts`.
-- **Entrada:** `RepositoryPackageManifestDetectionResult` producido por la detección metadata-only de manifests.
-- **Función pública nueva:** `deriveRepositoryStructureFromPackageManifestDetection`, con alias `deriveRepositoryStructureSummary`.
-- **Contrato nuevo:** `RepositoryStructureSummaryResult`, serializable y versionado.
-- **Resumen de repositorio:** expone conteos de archivos raíz, directorios top-level, profundidad máxima y tamaño total.
-- **Directorios top-level:** reporta conteos de archivos, candidatos, ignorados, manifests, paquetes anidados, tamaño total y roles determinísticos como `package-container`, `source-container`, `test-container`, `configuration`, `documentation` y `asset`.
-- **Package roots:** diferencia paquete raíz y paquetes anidados, conserva `manifestPath`, `packageRootPath` cuando aplica, ecosistema y conteos por tipo de archivo dentro del scope del paquete.
-- **Estados:** conserva `completed`, `partial` y `failed`; si la detección de manifests falla, el resumen estructural se omite con error `REPOSITORY_SCAN_STRUCTURE_SUMMARY_SKIPPED`.
-- **Issues:** preserva warnings/errores del scan fuente y de la detección de manifests dentro del resumen estructural.
-- **Determinismo:** el serializer ordena directorios, paquetes e issues; valida paths, roles, package roots y todos los conteos derivados.
-- **Pruebas:** se agregó `packages/repository-scanner/test/repository-structure.test.ts` para derivación principal, estado parcial, failure safe, orden determinístico y rechazo de conteos inconsistentes.
-- **Limitación principal:** todavía no se lee `package.json`, no se extraen `name`, `version`, scripts, dependencias ni workspaces, no se infieren lenguajes/stacks, no se parsea TypeScript y no se construye grafo.
+- **Commit:** `feat(parser-core): define parser contracts`
+- **Paquete principal:** `packages/parser-core`.
+- **Archivo principal nuevo:** `packages/parser-core/src/parser-result.ts`.
+- **Export público actualizado:** `packages/parser-core/src/index.ts`.
+- **Contratos nuevos:** referencias parseables de archivo, batch input, posiciones, rangos de texto, descriptor de parser, diagnósticos `PARSER_*`, registros normalizados de símbolos, imports, exports, referencias, resultado por archivo y resultado por lote.
+- **Lenguajes iniciales:** `typescript`, `tsx`, `javascript`, `jsx`, `json` y `unknown`.
+- **Roles de archivo:** `source`, `test`, `manifest`, `config`, `declaration` y `unknown`.
+- **Estados:** `completed`, `partial`, `failed` y `skipped` para unidades y lotes de parsing.
+- **Validación runtime:** paths relativos seguros, IDs de plugin kebab-case, códigos `PARSER_*`, extensiones simples, rangos ordenados, severidades, enums, conteos consistentes, unicidad de paths de lote y unicidad de `localId` de símbolos por archivo.
+- **Serialización:** helpers determinísticos para batch inputs, resultados por archivo y resultados por lote, con orden estable de archivos, diagnósticos, símbolos, imports, exports y referencias.
+- **Plugin host contract:** interfaz `ParserCoreLanguageParserPlugin` con `canParse`, `parse` y `getVersion` para parsers específicos.
+- **Pruebas:** se agregó `packages/parser-core/test/parser-result.test.ts` para batch input, serialización de resultados, validaciones principales, guards/asserts y rechazo de inconsistencias.
+- **Limitación principal:** los contratos son estructurales y no dependen del scanner para evitar que `typecheck` requiera artefactos `dist` de otros workspaces; la conversión desde resultados del scanner queda para un commit posterior cuando exista el flujo integrado.
 
 ## 4. Próximo commit recomendado
 
-- **Commit sugerido:** `feat(parser-core): define parser contracts`
-- **Objetivo:** iniciar los contratos del parser core para representar entradas de parseo, resultados, diagnósticos, unidades parseables y metadatos necesarios para parsers específicos.
+- **Commit sugerido:** `feat(parser-typescript): parse TypeScript source files`
+- **Objetivo:** implementar el primer parser específico sobre los contratos de `parser-core` para procesar archivos TypeScript/TSX controlados por el propio pipeline.
 - **Archivos probables:**
-  - `packages/parser-core/src/parser-result.ts` o contrato equivalente;
-  - `packages/parser-core/src/index.ts`;
-  - `packages/parser-core/test/parser-result.test.ts`;
+  - `packages/parser-typescript/src/typescript-parser.ts` o equivalente;
+  - `packages/parser-typescript/src/index.ts`;
+  - `packages/parser-typescript/test/typescript-parser.test.ts`;
+  - `packages/parser-typescript/package.json` si se requiere dependencia directa a `parser-core`;
   - `README.md`;
   - `CODESTELLATION_PROJECT_STATE.md`.
 - **Criterios esperados:**
-  - definir contratos sin implementar parser TypeScript todavía;
-  - consumir referencias de archivos candidatos del scanner como entradas futuras, no contenido completo;
-  - modelar resultados serializables, diagnósticos y estados;
-  - preparar el terreno para `feat(parser-typescript): parse TypeScript source files`;
-  - no analizar imports/exports, símbolos ni construir nodos del grafo.
+  - implementar un parser TypeScript mínimo y determinístico;
+  - producir `ParserCoreParseUnitResult` usando los contratos nuevos;
+  - registrar diagnósticos recuperables cuando el archivo tenga errores;
+  - cubrir fixture mínimo con símbolos/imports/exports básicos si el alcance lo permite;
+  - no analizar relaciones estáticas profundas, no resolver módulos y no construir grafo todavía.
 
 ## 5. Reglas activas para los próximos commits
 
 - Entregar únicamente archivos nuevos o modificados, no el proyecto completo.
-- No entregar patches salvo solicitud explícita.
+- Entregar patch cuando el usuario lo solicite explícitamente.
 - Mantener commits pequeños, atómicos y verificables.
 - Actualizar este documento al terminar cada commit.
 - Mantener `README.md` sincronizado solo cuando cambien comandos, estado o navegación principal.
@@ -74,11 +74,11 @@ pnpm build
 pnpm run ci:check
 ```
 
-Validación focalizada para el Commit 021:
+Validación focalizada para el Commit 022:
 
 ```bash
-pnpm --filter @codestellation/repository-scanner typecheck
-pnpm test -- packages/repository-scanner/test/scan-result.test.ts packages/repository-scanner/test/file-classifier.test.ts packages/repository-scanner/test/package-manifest.test.ts packages/repository-scanner/test/repository-structure.test.ts
+pnpm --filter @codestellation/parser-core typecheck
+pnpm test -- packages/parser-core/test/parser-result.test.ts
 ```
 
 ## 7. Riesgos conocidos
@@ -94,6 +94,8 @@ pnpm test -- packages/repository-scanner/test/scan-result.test.ts packages/repos
 - Las reglas de clasificación por nombre/extensión son heurísticas iniciales y deben seguir siendo visibles, configurables y auditables.
 - La detección de manifests todavía no valida contenido de `package.json`; por ahora solo detecta presencia por path, nombre y metadata del inventario.
 - El resumen estructural no resuelve workspaces ni dependencias; solo calcula estructura desde paths e inventario.
+- Los contratos de parser core todavía no tienen adaptador desde `repository-scanner`; se mantienen estructurales hasta integrar el pipeline.
+- Los resultados del parser core modelan símbolos/imports/exports/referencias normalizados, pero todavía no garantizan procedencia del grafo ni resolución semántica.
 - Los resultados del scanner conservan paths locales serializables; las capas de API y UI deberán evitar exponer rutas sensibles sin una política explícita.
 
 ## 8. Archivos clave actuales
@@ -127,7 +129,5 @@ pnpm test -- packages/repository-scanner/test/scan-result.test.ts packages/repos
 - `packages/repository-scanner/src/file-classifier.ts`
 - `packages/repository-scanner/src/package-manifest.ts`
 - `packages/repository-scanner/src/repository-structure.ts`
-- `packages/repository-scanner/test/scan-result.test.ts`
-- `packages/repository-scanner/test/file-classifier.test.ts`
-- `packages/repository-scanner/test/package-manifest.test.ts`
-- `packages/repository-scanner/test/repository-structure.test.ts`
+- `packages/parser-core/src/parser-result.ts`
+- `packages/parser-core/test/parser-result.test.ts`
