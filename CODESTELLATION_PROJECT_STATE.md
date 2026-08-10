@@ -6,49 +6,53 @@
 
 - **Fecha de actualización:** 2026-08-10
 - **Branch activa:** `ft-mvp1`
-- **Último commit lógico:** `feat(analyzer-static): extract imports and exports`
-- **Número operativo:** Commit 024
+- **Último commit lógico:** `feat(graph-builder): create project folder and file nodes`
+- **Número operativo:** Commit 025
 - **Release objetivo:** Release 0.0 — Fundaciones / MVP 1
-- **Fase del roadmap:** Fase 5 con parser TypeScript y análisis estático inicial de imports/exports
-- **Estado general:** stable scaffolding; normalized source inventory active; repository scan contracts active; deterministic metadata-only file classification active; Node package manifest detection active; repository structure summary active; parser core contracts active; TypeScript/TSX source-text parser active; static import/export analyzer active; graph builder not started yet
+- **Fase del roadmap:** Fase 6 con graph-builder inicial de nodos proyecto/carpeta/archivo
+- **Estado general:** stable scaffolding; normalized source inventory active; repository scan contracts active; deterministic metadata-only file classification active; Node package manifest detection active; repository structure summary active; parser core contracts active; TypeScript/TSX source-text parser active; static import/export analyzer active; graph builder project/folder/file node generation active
 
 ## 2. Objetivo actual
 
-Iniciar `@codestellation/analyzer-static` para consumir resultados normalizados de `@codestellation/parser-core` y convertir imports/exports parseados en registros de análisis estático listos para relaciones futuras. Este commit no resuelve módulos contra filesystem, no lee archivos, no crea nodos ni edges del grafo y no ejecuta código del repositorio analizado.
+Iniciar `@codestellation/graph-builder` creando un primer resultado de grafo canónico con nodos de proyecto, carpetas y archivos a partir del resumen estructural del scanner. Este commit no crea nodos de paquete, símbolos ni relaciones; no conecta imports/exports; no resuelve módulos; no lee contenido de archivos; y no ejecuta código del repositorio analizado.
 
 ## 3. Último commit completado
 
-- **Commit:** `feat(analyzer-static): extract imports and exports`
-- **Paquete principal:** `packages/analyzer-static`.
-- **Archivo principal nuevo:** `packages/analyzer-static/src/import-export-analysis.ts`.
-- **Export público actualizado:** `packages/analyzer-static/src/index.ts`.
-- **Dependencia declarada:** `@codestellation/parser-core` como workspace dependency con tipos consumidos desde `src` para no depender de `dist` previo durante `typecheck`.
-- **Entrada soportada:** `ParserCoreParseUnitResult` y `ParserCoreParseBatchResult` ya normalizados por `parser-core`.
-- **Salida:** `AnalyzerStaticFileAnalysis` por archivo y `AnalyzerStaticImportExportAnalysisResult` agregado, ambos serializables, versionados y con summaries consistentes.
-- **Imports:** se conservan `moduleSpecifier`, `importKind`, rango opcional, archivo origen, clasificación de specifier (`relative`, `absolute`, `package`, `builtin`, `unknown`), bandera `isTypeOnly` y bandera `isDynamic`.
-- **Exports:** se conservan `exportKind`, nombre opcional, re-export source opcional, clasificación del source specifier, archivo origen, rango opcional, bandera `isTypeOnly` y bandera `isReExport`.
-- **Diagnósticos:** el analizador introduce códigos `ANALYZER_STATIC_*` para parse units skipped/failed y no mezcla esos diagnósticos con los `PARSER_*` de parser-core.
-- **Modo seguro:** el analizador no importa `parser-typescript`, no lee archivos desde disco, no resuelve módulos, no interpreta contenido adicional y no ejecuta código.
-- **Pruebas:** se agregó `packages/analyzer-static/test/import-export-analysis.test.ts` para extracción batch, parse units fallidos, clasificación de specifiers y validación de contratos inconsistentes.
-- **Limitación principal:** todavía no existe adaptador desde `repository-scanner` hacia `parser-core`, no se lee contenido desde filesystem, no se resuelven módulos, no se crea grafo y no se conectan imports/exports con nodos reales.
+- **Commit:** `feat(graph-builder): create project folder and file nodes`
+- **Paquete principal:** `packages/graph-builder`.
+- **Archivo principal nuevo:** `packages/graph-builder/src/project-file-nodes.ts`.
+- **Export público actualizado:** `packages/graph-builder/src/index.ts`.
+- **Dependencias declaradas:** `@codestellation/graph-model` y `@codestellation/repository-scanner` como workspace dependencies.
+- **Entrada soportada:** `RepositoryStructureSummaryResult` generado por el scanner de repositorios.
+- **Salida:** `GraphBuilderProjectFileGraphResult` serializable con snapshot canónico, nodo de proyecto, nodos de carpeta, nodos de archivo, diagnósticos derivados y summary consistente.
+- **Proyecto:** se crea un único nodo `project` raíz con ID estable `node:project/root` y nombre derivado de metadata del inventario cuando existe.
+- **Carpetas:** se crean nodos `folder` para todos los directorios y ancestros presentes en las rutas del inventario, no solo directorios top-level. Cada carpeta conserva parentId jerárquico, path relativo, conteos y tags de rol derivados por metadata.
+- **Archivos:** se crean nodos `file` para los archivos del inventario con path relativo, lenguaje inferido por extensión, extensión normalizada, disposición de scan (`candidate`, `ignored` o `unclassified`) y motivo de ignorado cuando aplica.
+- **Identidad:** los IDs de carpetas y archivos son determinísticos, seguros para `graph-model` y codifican caracteres válidos en paths pero inválidos para tokens de IDs.
+- **Procedencia y confianza:** todos los nodos incluyen confianza `confirmed` y procedencia `source-scan` con evidencia del resumen estructural o path de inventario.
+- **Snapshot:** se valida con `graph-model`; incluye nodos de proyecto/carpeta/archivo y cero edges.
+- **Modo seguro:** no se leen contenidos, no se resuelven imports, no se crean package nodes, no se crean symbol nodes, no se crean edges y no se ejecuta código externo.
+- **Pruebas:** se agregó `packages/graph-builder/test/project-file-nodes.test.ts` para snapshot determinístico, jerarquía de parents, archivos ignorados, codificación de IDs y validación de contratos.
+- **Soporte de typecheck:** `graph-model`, `repository-scanner` y `graph-builder` exponen tipos desde `src/index.ts` para evitar depender de `dist` previo durante `pnpm typecheck`.
+- **Limitación principal:** todavía no hay nodos de paquete, edges `contains`, edges de dependencias, edges imports/exports ni integración end-to-end desde CLI.
 
 ## 4. Próximo commit recomendado
 
-- **Commit sugerido:** `feat(graph-builder): create project folder and file nodes`
-- **Objetivo:** iniciar `@codestellation/graph-builder` creando nodos canónicos de proyecto, carpetas y archivos desde estructura/inventario disponible, sin crear todavía relaciones de imports/exports.
+- **Commit sugerido:** `feat(graph-builder): create package and dependency edges`
+- **Objetivo:** extender `@codestellation/graph-builder` para crear nodos `package` y relaciones iniciales desde manifests detectados, sin resolver imports/exports todavía.
 - **Archivos probables:**
-  - `packages/graph-builder/src/project-file-nodes.ts` o equivalente;
+  - `packages/graph-builder/src/package-nodes.ts` o equivalente;
   - `packages/graph-builder/src/index.ts`;
-  - `packages/graph-builder/test/project-file-nodes.test.ts`;
-  - `packages/graph-builder/package.json` si requiere dependencias directas a `graph-model` y/o contratos estructurales del scanner;
+  - `packages/graph-builder/test/package-nodes.test.ts`;
   - `README.md`;
   - `CODESTELLATION_PROJECT_STATE.md`.
 - **Criterios esperados:**
-  - crear nodos `project`, `folder` y `file` compatibles con `graph-model`;
+  - crear nodos `package` compatibles con `graph-model`;
+  - relacionar proyecto, carpetas, archivos y paquetes de forma explícita cuando corresponda;
   - preservar procedencia/confianza obligatoria;
   - mantener salida determinística y serializable;
-  - no crear edges de imports/exports todavía;
-  - no resolver módulos ni leer contenido adicional.
+  - no resolver imports/exports ni dependencias semánticas todavía;
+  - no leer contenido completo de manifests.
 
 ## 5. Reglas activas para los próximos commits
 
@@ -74,12 +78,13 @@ pnpm build
 pnpm run ci:check
 ```
 
-Validación focalizada para el Commit 024:
+Validación focalizada para el Commit 025:
 
 ```bash
-pnpm --filter @codestellation/parser-core typecheck
-pnpm --filter @codestellation/analyzer-static typecheck
-pnpm test -- packages/parser-core/test/parser-result.test.ts packages/analyzer-static/test/import-export-analysis.test.ts
+pnpm --filter @codestellation/graph-model typecheck
+pnpm --filter @codestellation/repository-scanner typecheck
+pnpm --filter @codestellation/graph-builder typecheck
+pnpm test -- packages/graph-builder/test/project-file-nodes.test.ts
 ```
 
 ## 7. Riesgos conocidos
@@ -99,6 +104,7 @@ pnpm test -- packages/parser-core/test/parser-result.test.ts packages/analyzer-s
 - El parser TypeScript solo parsea texto fuente provisto explícitamente; todavía no existe lectura de contenido de archivos desde el pipeline.
 - El parser TypeScript no crea `Program`, no usa type checker y no resuelve imports contra archivos reales.
 - El analizador estático clasifica module specifiers pero todavía no los resuelve contra filesystem, package manifests, tsconfig paths o aliases.
+- El graph-builder inicial crea nodos de proyecto, carpetas y archivos, pero todavía no crea nodos de paquete, símbolos, edges `contains`, edges de dependencias ni relaciones de imports/exports.
 - Los resultados del scanner conservan paths locales serializables; las capas de API y UI deberán evitar exponer rutas sensibles sin una política explícita.
 
 ## 8. Archivos clave actuales
@@ -138,3 +144,5 @@ pnpm test -- packages/parser-core/test/parser-result.test.ts packages/analyzer-s
 - `packages/parser-typescript/test/typescript-parser.test.ts`
 - `packages/analyzer-static/src/import-export-analysis.ts`
 - `packages/analyzer-static/test/import-export-analysis.test.ts`
+- `packages/graph-builder/src/project-file-nodes.ts`
+- `packages/graph-builder/test/project-file-nodes.test.ts`
