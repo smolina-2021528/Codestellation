@@ -1,16 +1,20 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
+const graphBuilderSource = fileURLToPath(new URL('./packages/graph-builder/src/index.ts', import.meta.url));
 const graphModelSource = fileURLToPath(new URL('./packages/graph-model/src/index.ts', import.meta.url));
 const parserCoreSource = fileURLToPath(new URL('./packages/parser-core/src/index.ts', import.meta.url));
 const repositoryScannerSource = fileURLToPath(new URL('./packages/repository-scanner/src/index.ts', import.meta.url));
+const sourceIngestionSource = fileURLToPath(new URL('./packages/source-ingestion/src/index.ts', import.meta.url));
 
 export default defineConfig({
   resolve: {
     alias: {
+      '@codestellation/graph-builder': graphBuilderSource,
       '@codestellation/graph-model': graphModelSource,
       '@codestellation/parser-core': parserCoreSource,
-      '@codestellation/repository-scanner': repositoryScannerSource
+      '@codestellation/repository-scanner': repositoryScannerSource,
+      '@codestellation/source-ingestion': sourceIngestionSource
     }
   },
   test: {

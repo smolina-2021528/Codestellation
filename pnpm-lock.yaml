@@ -23,7 +23,21 @@ importers:
 
   apps/api: {}
 
-  apps/cli: {}
+  apps/cli:
+    dependencies:
+      '@codestellation/graph-builder':
+        specifier: workspace:*
+        version: link:../../packages/graph-builder
+      '@codestellation/repository-scanner':
+        specifier: workspace:*
+        version: link:../../packages/repository-scanner
+      '@codestellation/source-ingestion':
+        specifier: workspace:*
+        version: link:../../packages/source-ingestion
+    devDependencies:
+      '@types/node':
+        specifier: 22.20.1
+        version: 22.20.1
 
   apps/web: {}
 

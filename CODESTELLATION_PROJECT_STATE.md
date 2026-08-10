@@ -6,51 +6,46 @@
 
 - **Fecha de actualización:** 2026-08-10
 - **Branch activa:** `ft-mvp1`
-- **Último commit lógico:** `feat(graph-builder): create package and dependency edges`
-- **Número operativo:** Commit 026
+- **Último commit lógico:** `feat(cli): index local folder and export graph json`
+- **Número operativo:** Commit 027
 - **Release objetivo:** Release 0.0 — Fundaciones / MVP 1
-- **Fase del roadmap:** Fase 6 con graph-builder de nodos paquete y edges estructurales iniciales
-- **Estado general:** stable scaffolding; normalized source inventory active; repository scan contracts active; deterministic metadata-only file classification active; Node package manifest detection active; repository structure summary active; parser core contracts active; TypeScript/TSX source-text parser active; static import/export analyzer active; graph builder project/folder/file/package node generation active; metadata-only contains edges active
+- **Fase del roadmap:** Fase 7 con primer flujo CLI end-to-end metadata-only
+- **Estado general:** stable scaffolding; normalized source inventory active; repository scan contracts active; deterministic metadata-only file classification active; Node package manifest detection active; repository structure summary active; parser core contracts active; TypeScript/TSX source-text parser active; static import/export analyzer active; graph builder project/folder/file/package node generation active; metadata-only contains edges active; CLI local folder graph JSON export active
 
 ## 2. Objetivo actual
 
-Extender `@codestellation/graph-builder` para crear nodos `package` y relaciones iniciales desde manifests detectados, usando solamente metadata del scanner y del grafo proyecto/carpeta/archivo. Este commit no lee contenido completo de manifests, no interpreta campos de `package.json`, no resuelve imports/exports, no crea símbolos, no calcula dependencias semánticas reales y no ejecuta código del repositorio analizado.
+Crear el primer flujo CLI mínimo para indexar una carpeta local explícita y exportar un JSON serializable del grafo. El flujo encadena ingesta local, scanner, detección de manifests, resumen estructural y graph-builder metadata-only. Este commit no lee contenido completo de archivos fuera del inventario soportado, no interpreta `package.json`, no resuelve imports/exports, no crea símbolos, no calcula dependencias reales y no ejecuta código del repositorio analizado.
 
 ## 3. Último commit completado
 
-- **Commit:** `feat(graph-builder): create package and dependency edges`
-- **Paquete principal:** `packages/graph-builder`.
-- **Archivo principal nuevo:** `packages/graph-builder/src/package-dependency-edges.ts`.
-- **Export público actualizado:** `packages/graph-builder/src/index.ts`.
-- **Entrada soportada:** `GraphBuilderProjectFileGraphResult` generado desde `RepositoryStructureSummaryResult`.
-- **Salida:** `GraphBuilderPackageDependencyGraphResult` serializable con snapshot canónico, nodos de proyecto/carpeta/archivo/paquete, edges `contains`, diagnósticos derivados y summary consistente.
-- **Nodos package:** se crean desde `RepositoryStructurePackageRootSummary`; el root package usa el nombre del proyecto y los paquetes anidados usan el basename del package root.
-- **Package manager:** se infiere de lockfiles directos del package root (`pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, `bun.lockb`, `package-lock.json`, `npm-shrinkwrap.json`) sin leer contenido de archivos.
-- **Edges estructurales:** se crean edges `contains` para parentId jerárquico existente y edges paquete→manifest para cada manifest detectado.
-- **Dependency edges:** el contrato expone `dependencyEdges`, pero el conteo permanece en cero mientras no se lea contenido de manifests ni se resuelvan dependencias reales.
-- **Procedencia y confianza:** los nodos y edges nuevos incluyen confianza `confirmed` y procedencia `source-scan` con evidencia de manifest o parentId.
-- **Snapshot:** se valida con `graph-model`; incluye nodos de proyecto/carpeta/archivo/paquete y edges `contains` determinísticos.
-- **Modo seguro:** no se leen contenidos, no se resuelven imports, no se crean symbol nodes, no se crean edges `imports`/`exports`/`depends-on` reales y no se ejecuta código externo.
-- **Pruebas:** se agregó `packages/graph-builder/test/package-dependency-edges.test.ts` para nodos de paquete, parentId, edges `contains`, inferencia de package manager y validación de contratos.
-- **Limitación principal:** todavía no existe integración CLI end-to-end, lectura segura de contenido, parsing de manifests, resolución de workspaces/dependencias ni conexión entre analyzer-static y graph-builder.
+- **Commit:** `feat(cli): index local folder and export graph json`
+- **App principal:** `apps/cli`.
+- **Archivo principal actualizado:** `apps/cli/src/index.ts`.
+- **Comando:** `codestellation index-local <path> --out <graph.json> [--pretty]`.
+- **Entrada soportada:** ruta local explícita compatible con `LocalFolderSourceInput`.
+- **Salida:** export JSON versionado con `GraphBuilderPackageDependencyGraphResult`, resumen de conteos, fecha de generación e input normalizado.
+- **Pipeline:** `resolveLocalFolderSource` → `createNormalizedSourceFileInventory` → `classifyRepositoryScanInput` → `detectPackageManifests` → `deriveRepositoryStructureSummary` → `buildProjectFileGraphFromRepositoryStructure` → `buildPackageDependencyGraphFromProjectFileGraph`.
+- **Opciones CLI:** `--out`, `--pretty`, `--include`, `--exclude`, `--max-files` y `--max-file-size-bytes`.
+- **Modo seguro:** preserva `followSymlinks: false`, `executeRepositoryCode: false` y Git history `metadata-only`; no ejecuta scripts ni código del repositorio analizado.
+- **Compatibilidad de typecheck:** `@codestellation/source-ingestion` expone tipos desde `src` para que `apps/cli` no requiera `dist` previo durante `typecheck`.
+- **Pruebas:** se agregó `apps/cli/test/index-local.test.ts` para parsing de argumentos, export serializable, JSON compacto/pretty, escritura con `--out` y errores claros.
+- **Limitación principal:** el CLI aún no lee contenido fuente para alimentar parsers, no exporta snapshots incrementales, no integra `analyzer-static` al graph-builder y no tiene comandos para ZIP/Git/API/UI.
 
 ## 4. Próximo commit recomendado
 
-- **Commit sugerido:** `feat(cli): index local folder and export graph json`
-- **Objetivo:** crear un primer flujo CLI mínimo que encadene ingesta local, scanner y graph-builder para indexar una carpeta local y exportar un JSON del grafo, sin ejecutar código del repositorio analizado.
+- **Commit sugerido:** `feat(cli): add safe source text parsing pipeline`
+- **Objetivo:** agregar una etapa CLI controlada que lea únicamente contenido de archivos candidatos TypeScript/TSX dentro de límites explícitos para alimentar `parser-typescript` y preparar relaciones imports/exports, sin ejecutar código ni resolver módulos todavía.
 - **Archivos probables:**
-  - `apps/cli/src/index.ts` o equivalente;
-  - `apps/cli/package.json` si faltan dependencias internas;
-  - pruebas focalizadas de CLI cuando el scaffold lo permita;
+  - `apps/cli/src/index.ts` o nuevo módulo de pipeline;
+  - `apps/cli/test/index-local.test.ts` o prueba nueva focalizada;
   - `README.md`;
   - `CODESTELLATION_PROJECT_STATE.md`.
 - **Criterios esperados:**
-  - aceptar una ruta local explícita;
-  - usar las capas ya creadas en orden seguro;
-  - exportar JSON serializable;
-  - no leer contenido completo fuera de lo estrictamente soportado por ingesta/scanner actual;
-  - no ejecutar scripts ni código del repositorio analizado;
-  - mantener errores claros para entradas inválidas.
+  - leer solo archivos candidatos permitidos por scanner y límites de tamaño;
+  - alimentar `parser-typescript` con `sourceText` explícito;
+  - mantener salida determinística y serializable;
+  - no ejecutar scripts ni importar módulos del repositorio analizado;
+  - no resolver imports todavía contra filesystem/package manifests.
 
 ## 5. Reglas activas para los próximos commits
 
@@ -76,13 +71,11 @@ pnpm build
 pnpm run ci:check
 ```
 
-Validación focalizada para el Commit 026:
+Validación focalizada para el Commit 027:
 
 ```bash
-pnpm --filter @codestellation/graph-model typecheck
-pnpm --filter @codestellation/repository-scanner typecheck
-pnpm --filter @codestellation/graph-builder typecheck
-pnpm test -- packages/graph-builder/test/project-file-nodes.test.ts packages/graph-builder/test/package-dependency-edges.test.ts
+pnpm --filter @codestellation/cli typecheck
+pnpm test -- apps/cli/test/index-local.test.ts
 ```
 
 ## 7. Riesgos conocidos
@@ -103,7 +96,8 @@ pnpm test -- packages/graph-builder/test/project-file-nodes.test.ts packages/gra
 - El parser TypeScript no crea `Program`, no usa type checker y no resuelve imports contra archivos reales.
 - El analizador estático clasifica module specifiers pero todavía no los resuelve contra filesystem, package manifests, tsconfig paths o aliases.
 - El graph-builder crea nodos de paquete y edges `contains`, pero todavía no crea nodos de símbolos, edges `imports`/`exports`, edges `depends-on` reales ni relaciones derivadas de contenido de manifests.
-- Los resultados del scanner conservan paths locales serializables; las capas de API y UI deberán evitar exponer rutas sensibles sin una política explícita.
+- El export CLI incluye metadata local serializable de la fuente; esto es esperado para uso local explícito, pero API/UI deberán aplicar política antes de exponer rutas sensibles.
+- El primer flujo CLI exporta el grafo metadata-only; todavía no incluye análisis por contenido fuente ni relaciones derivadas de parser/analyzer.
 
 ## 8. Archivos clave actuales
 
@@ -118,6 +112,8 @@ pnpm test -- packages/graph-builder/test/project-file-nodes.test.ts packages/gra
 - `vitest.config.ts`
 - `scripts/check-format.mjs`
 - `scripts/check-workspace-boundaries.mjs`
+- `apps/cli/src/index.ts`
+- `apps/cli/test/index-local.test.ts`
 - `docs/00_CODESTELLATION_MASTER_PLAN.md`
 - `docs/01_ARCHITECTURE_AND_COMPONENTS.md`
 - `docs/02_ENGINEERING_QUALITY.md`

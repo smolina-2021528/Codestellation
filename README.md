@@ -167,7 +167,20 @@ El paquete `@codestellation/graph-builder` ya inicia el ensamblaje del grafo can
 
 El graph-builder también puede extender ese resultado con `GraphBuilderPackageDependencyGraphResult`, creando nodos `package` desde manifests detectados y edges `contains` determinísticos para la jerarquía proyecto/carpeta/archivo/paquete y para la relación paquete→manifest. La inferencia inicial de package manager usa únicamente lockfiles directos del package root (`pnpm-lock.yaml`, `yarn.lock`, `bun.lock`, `bun.lockb`, `package-lock.json` o `npm-shrinkwrap.json`) y no lee contenido de manifests.
 
-Este paso sigue siendo metadata-only: no lee contenido de archivos, no interpreta campos de `package.json`, no crea nodos de símbolos, no crea edges `imports`/`exports`, no resuelve dependencias semánticas ni módulos, y no ejecuta código del repositorio analizado. El siguiente límite recomendado es integrar un primer flujo CLI mínimo para indexar carpeta local y exportar JSON.
+Este paso sigue siendo metadata-only: no lee contenido de archivos, no interpreta campos de `package.json`, no crea nodos de símbolos, no crea edges `imports`/`exports`, no resuelve dependencias semánticas ni módulos, y no ejecuta código del repositorio analizado.
+
+## CLI local inicial
+
+La app `@codestellation/cli` ya expone el primer flujo local end-to-end del MVP 1. El comando `codestellation index-local <path> --out <graph.json> [--pretty]` resuelve una carpeta local explícita, crea inventario normalizado, clasifica archivos, detecta manifests, deriva estructura del repositorio y construye un JSON serializable con `GraphBuilderPackageDependencyGraphResult`.
+
+Ejemplo de uso después de compilar:
+
+```bash
+pnpm build
+node apps/cli/dist/index.js index-local ./ruta/al/repositorio --out graph.json --pretty
+```
+
+El CLI también acepta `--include`, `--exclude`, `--max-files` y `--max-file-size-bytes` para acotar la ingesta. El flujo conserva operación local-first y segura: no sigue symlinks, no ejecuta scripts ni código del repositorio analizado, no interpreta contenido de `package.json`, no resuelve imports/exports y todavía no alimenta parser/analyzer con contenido fuente.
 
 ## Documentación del producto
 
@@ -182,6 +195,6 @@ La documentación base del producto, su arquitectura y las reglas de continuidad
 
 ## Estado
 
-La **Fase 1 — Bootstrap del monorepo** y la **Fase 2 — Contratos y modelo canónico** están completas para la línea base del MVP 1. La **Fase 3 — Ingesta segura inicial** ya cuenta con contratos de entrada, resolución real de carpetas locales e inventario normalizado de archivos en modo solo lectura. La **Fase 4 — Scanner de repositorios** ya tiene contratos, clasificación inicial de archivos, detección metadata-only de `package.json` y resumen estructural inicial. La **Fase 5 — Parsers y análisis estático inicial** ya cuenta con contratos base de parser core, primer parser TypeScript/TSX sobre texto fuente provisto por el pipeline y extracción estática inicial de imports/exports sin resolución de módulos. La **Fase 6 — Graph builder inicial** ya crea nodos de proyecto, carpetas, archivos y paquetes, además de edges `contains` estructurales metadata-only desde parentId y manifests detectados; todavía no existen nodos de símbolos, edges `imports`/`exports`, edges `depends-on` reales, integración scanner-parser, resolución de módulos ni análisis de referencias profundas. El workspace TypeScript mantiene tres aplicaciones y veinte paquetes compilables, con validaciones de formato, límites entre workspaces, typecheck estricto, pruebas y CI.
+La **Fase 1 — Bootstrap del monorepo** y la **Fase 2 — Contratos y modelo canónico** están completas para la línea base del MVP 1. La **Fase 3 — Ingesta segura inicial** ya cuenta con contratos de entrada, resolución real de carpetas locales e inventario normalizado de archivos en modo solo lectura. La **Fase 4 — Scanner de repositorios** ya tiene contratos, clasificación inicial de archivos, detección metadata-only de `package.json` y resumen estructural inicial. La **Fase 5 — Parsers y análisis estático inicial** ya cuenta con contratos base de parser core, primer parser TypeScript/TSX sobre texto fuente provisto por el pipeline y extracción estática inicial de imports/exports sin resolución de módulos. La **Fase 6 — Graph builder inicial** ya crea nodos de proyecto, carpetas, archivos y paquetes, además de edges `contains` estructurales metadata-only desde parentId y manifests detectados. La **Fase 7 — CLI local inicial** ya puede indexar una carpeta local explícita y exportar JSON del grafo metadata-only; todavía no existen nodos de símbolos, edges `imports`/`exports`, edges `depends-on` reales, integración scanner-parser por contenido, resolución de módulos ni análisis de referencias profundas. El workspace TypeScript mantiene tres aplicaciones y veinte paquetes compilables, con validaciones de formato, límites entre workspaces, typecheck estricto, pruebas y CI.
 
 > Comprender antes de cambiar. Conectar antes de generar. Actualizar sin perder contexto.

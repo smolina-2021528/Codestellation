@@ -14,5 +14,16 @@
   "scripts": {
     "build": "tsc --project tsconfig.json",
     "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "bin": {
+    "codestellation": "./dist/index.js"
+  },
+  "dependencies": {
+    "@codestellation/graph-builder": "workspace:*",
+    "@codestellation/repository-scanner": "workspace:*",
+    "@codestellation/source-ingestion": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1"
   }
 }
