@@ -33,7 +33,11 @@ importers:
 
   packages/analyzer-semantic: {}
 
-  packages/analyzer-static: {}
+  packages/analyzer-static:
+    dependencies:
+      '@codestellation/parser-core':
+        specifier: workspace:*
+        version: link:../parser-core
 
   packages/config: {}
 
