@@ -72,6 +72,9 @@ importers:
 
   packages/graph-builder:
     dependencies:
+      '@codestellation/analyzer-static':
+        specifier: workspace:*
+        version: link:../analyzer-static
       '@codestellation/graph-model':
         specifier: workspace:*
         version: link:../graph-model

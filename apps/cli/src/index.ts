@@ -42,9 +42,11 @@ import {
   type RepositoryScanInput
 } from '@codestellation/repository-scanner';
 import {
+  buildImportExportGraphFromStaticAnalysis,
   buildPackageDependencyGraphFromProjectFileGraph,
   buildProjectFileGraphFromRepositoryStructure,
   toSerializableGraphBuilderPackageDependencyGraphResult,
+  type GraphBuilderImportExportGraphResult,
   type GraphBuilderPackageDependencyGraphResult
 } from '@codestellation/graph-builder';
 
@@ -112,7 +114,7 @@ export interface CliLocalFolderGraphExport {
   readonly command: 'index-local';
   readonly generatedAt: string;
   readonly input: CliLocalFolderGraphExportInput;
-  readonly graph: GraphBuilderPackageDependencyGraphResult;
+  readonly graph: GraphBuilderPackageDependencyGraphResult | GraphBuilderImportExportGraphResult;
   readonly sourceTextParsing?: CliLocalFolderSourceTextParsingExport;
   readonly summary: CliLocalFolderGraphExportSummary;
 }
@@ -170,15 +172,18 @@ export async function createLocalFolderGraphExport(
     options.cwd === undefined ? {} : { cwd: options.cwd }
   );
   const inventory = await createNormalizedSourceFileInventory(resolvedSource);
-  const graph = buildGraphFromInventory(inventory, options.now);
+  const packageGraph = buildGraphFromInventory(inventory, options.now);
   const sourceTextParsing = options.parseSourceText === true
     ? await createSafeSourceTextParsingExport({
         inventory,
         rootRealPath: resolvedSource.realPath,
-        graph,
+        graph: packageGraph,
         maxSourceTextBytes: normalizeMaxSourceTextBytes(options.maxSourceTextBytes)
       })
     : undefined;
+  const graph = sourceTextParsing === undefined
+    ? packageGraph
+    : buildImportExportGraphFromStaticAnalysis(packageGraph, sourceTextParsing.analysis);
   const generatedAt = normalizeNow(options.now).toISOString();
 
   return withOptionalSourceTextParsing({
@@ -193,8 +198,8 @@ export async function createLocalFolderGraphExport(
     graph,
     summary: {
       inventoryFileCount: inventory.summary.fileCount,
-      candidateFileCount: graph.sourceGraph.sourceStructure.packageManifestDetection.sourceScan.summary.candidateFileCount,
-      ignoredFileCount: graph.sourceGraph.sourceStructure.packageManifestDetection.sourceScan.summary.ignoredFileCount,
+      candidateFileCount: packageGraph.sourceGraph.sourceStructure.packageManifestDetection.sourceScan.summary.candidateFileCount,
+      ignoredFileCount: packageGraph.sourceGraph.sourceStructure.packageManifestDetection.sourceScan.summary.ignoredFileCount,
       packageNodeCount: graph.summary.packageNodeCount,
       totalNodeCount: graph.summary.totalNodeCount,
       totalEdgeCount: graph.summary.totalEdgeCount,

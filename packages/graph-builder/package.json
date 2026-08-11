@@ -16,6 +16,7 @@
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@codestellation/analyzer-static": "workspace:*",
     "@codestellation/graph-model": "workspace:*",
     "@codestellation/repository-scanner": "workspace:*"
   }
