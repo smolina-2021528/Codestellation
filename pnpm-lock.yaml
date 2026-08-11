@@ -25,9 +25,18 @@ importers:
 
   apps/cli:
     dependencies:
+      '@codestellation/analyzer-static':
+        specifier: workspace:*
+        version: link:../../packages/analyzer-static
       '@codestellation/graph-builder':
         specifier: workspace:*
         version: link:../../packages/graph-builder
+      '@codestellation/parser-core':
+        specifier: workspace:*
+        version: link:../../packages/parser-core
+      '@codestellation/parser-typescript':
+        specifier: workspace:*
+        version: link:../../packages/parser-typescript
       '@codestellation/repository-scanner':
         specifier: workspace:*
         version: link:../../packages/repository-scanner

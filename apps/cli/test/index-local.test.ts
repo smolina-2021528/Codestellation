@@ -19,7 +19,12 @@ async function withFixture<T>(callback: (root: string) => Promise<T>): Promise<T
     await writeFile(join(root, 'package.json'), '{"name":"demo"}\n', 'utf8');
     await writeFile(join(root, 'pnpm-lock.yaml'), 'lockfileVersion: 9.0\n', 'utf8');
     await mkdir(join(root, 'src'), { recursive: true });
-    await writeFile(join(root, 'src', 'index.ts'), 'export const answer = 42;\n', 'utf8');
+    await writeFile(
+      join(root, 'src', 'index.ts'),
+      'import { helper } from "./util";\nexport const answer = helper(42);\n',
+      'utf8'
+    );
+    await writeFile(join(root, 'src', 'util.ts'), 'export function helper(value: number) { return value; }\n', 'utf8');
     await mkdir(join(root, 'node_modules', 'ignored'), { recursive: true });
     await writeFile(join(root, 'node_modules', 'ignored', 'index.js'), 'module.exports = {};\n', 'utf8');
 
@@ -41,6 +46,9 @@ describe('Codestellation CLI local index flow', () => {
       '10',
       '--max-file-size-bytes',
       '1000',
+      '--parse-source-text',
+      '--max-source-text-bytes',
+      '5000',
       '--include',
       'src/**',
       '--exclude',
@@ -53,7 +61,9 @@ describe('Codestellation CLI local index flow', () => {
       include: ['src/**'],
       exclude: ['src/generated/**'],
       maxFiles: 10,
-      maxFileSizeBytes: 1000
+      maxFileSizeBytes: 1000,
+      parseSourceText: true,
+      maxSourceTextBytes: 5000
     });
   });
 
@@ -68,11 +78,54 @@ describe('Codestellation CLI local index flow', () => {
       expect(result.command).toBe('index-local');
       expect(result.generatedAt).toBe('2026-08-10T12:00:00.000Z');
       expect(result.input.resolvedRootName).toMatch(/^codestellation-cli-/);
-      expect(result.summary.inventoryFileCount).toBe(3);
+      expect(result.summary.inventoryFileCount).toBe(4);
       expect(result.summary.packageNodeCount).toBe(1);
       expect(result.summary.totalEdgeCount).toBeGreaterThan(0);
       expect(result.graph.packageNodes.map((node) => node.package.manifestPath)).toEqual(['package.json']);
       expect(result.graph.dependencyEdges).toEqual([]);
+    });
+  });
+
+  it('optionally reads TypeScript source text and appends parser plus static analysis results', async () => {
+    await withFixture(async (root) => {
+      const result = await createLocalFolderGraphExport({
+        sourcePath: root,
+        parseSourceText: true,
+        now: () => new Date('2026-08-10T12:00:00.000Z')
+      });
+
+      expect(result.summary.parsedSourceFileCount).toBe(2);
+      expect(result.summary.sourceImportCount).toBe(1);
+      expect(result.summary.sourceExportCount).toBe(2);
+      expect(result.sourceTextParsing?.summary).toMatchObject({
+        parseCandidateFileCount: 2,
+        parsedFileCount: 2,
+        skippedOversizedFileCount: 0,
+        importCount: 1,
+        exportCount: 2
+      });
+      expect(result.sourceTextParsing?.parseBatch.files.map((file) => file.file.path)).toEqual([
+        'src/index.ts',
+        'src/util.ts'
+      ]);
+      expect(result.sourceTextParsing?.analysis.imports.map((record) => record.moduleSpecifier)).toEqual([
+        './util'
+      ]);
+    });
+  });
+
+  it('respects the safe source text byte limit when parsing is enabled', async () => {
+    await withFixture(async (root) => {
+      const result = await createLocalFolderGraphExport({
+        sourcePath: root,
+        parseSourceText: true,
+        maxSourceTextBytes: 10,
+        now: () => new Date('2026-08-10T12:00:00.000Z')
+      });
+
+      expect(result.summary.parsedSourceFileCount).toBe(0);
+      expect(result.sourceTextParsing?.summary.skippedOversizedFileCount).toBe(2);
+      expect(result.sourceTextParsing?.parseBatch.files).toEqual([]);
     });
   });
 

@@ -19,7 +19,10 @@
     "codestellation": "./dist/index.js"
   },
   "dependencies": {
+    "@codestellation/analyzer-static": "workspace:*",
     "@codestellation/graph-builder": "workspace:*",
+    "@codestellation/parser-core": "workspace:*",
+    "@codestellation/parser-typescript": "workspace:*",
     "@codestellation/repository-scanner": "workspace:*",
     "@codestellation/source-ingestion": "workspace:*"
   },

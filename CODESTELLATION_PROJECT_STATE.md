@@ -6,46 +6,46 @@
 
 - **Fecha de actualización:** 2026-08-10
 - **Branch activa:** `ft-mvp1`
-- **Último commit lógico:** `feat(cli): index local folder and export graph json`
-- **Número operativo:** Commit 027
+- **Último commit lógico:** `feat(cli): add safe source text parsing pipeline`
+- **Número operativo:** Commit 028
 - **Release objetivo:** Release 0.0 — Fundaciones / MVP 1
-- **Fase del roadmap:** Fase 7 con primer flujo CLI end-to-end metadata-only
-- **Estado general:** stable scaffolding; normalized source inventory active; repository scan contracts active; deterministic metadata-only file classification active; Node package manifest detection active; repository structure summary active; parser core contracts active; TypeScript/TSX source-text parser active; static import/export analyzer active; graph builder project/folder/file/package node generation active; metadata-only contains edges active; CLI local folder graph JSON export active
+- **Fase del roadmap:** Fase 7 con flujo CLI end-to-end y parseo source-text opt-in
+- **Estado general:** stable scaffolding; normalized source inventory active; repository scan contracts active; deterministic metadata-only file classification active; Node package manifest detection active; repository structure summary active; parser core contracts active; TypeScript/TSX source-text parser active; static import/export analyzer active; graph builder project/folder/file/package node generation active; metadata-only contains edges active; CLI local folder graph JSON export active; safe CLI source text parsing pipeline active
 
 ## 2. Objetivo actual
 
-Crear el primer flujo CLI mínimo para indexar una carpeta local explícita y exportar un JSON serializable del grafo. El flujo encadena ingesta local, scanner, detección de manifests, resumen estructural y graph-builder metadata-only. Este commit no lee contenido completo de archivos fuera del inventario soportado, no interpreta `package.json`, no resuelve imports/exports, no crea símbolos, no calcula dependencias reales y no ejecuta código del repositorio analizado.
+Agregar una etapa CLI opt-in para leer contenido fuente de forma controlada, alimentar el parser TypeScript/TSX y adjuntar análisis estático de imports/exports al JSON exportado. El flujo sigue sin ejecutar código, sin interpretar `package.json`, sin resolver imports contra filesystem y sin modificar el grafo con símbolos o relaciones derivadas de contenido.
 
 ## 3. Último commit completado
 
-- **Commit:** `feat(cli): index local folder and export graph json`
+- **Commit:** `feat(cli): add safe source text parsing pipeline`
 - **App principal:** `apps/cli`.
 - **Archivo principal actualizado:** `apps/cli/src/index.ts`.
-- **Comando:** `codestellation index-local <path> --out <graph.json> [--pretty]`.
-- **Entrada soportada:** ruta local explícita compatible con `LocalFolderSourceInput`.
-- **Salida:** export JSON versionado con `GraphBuilderPackageDependencyGraphResult`, resumen de conteos, fecha de generación e input normalizado.
-- **Pipeline:** `resolveLocalFolderSource` → `createNormalizedSourceFileInventory` → `classifyRepositoryScanInput` → `detectPackageManifests` → `deriveRepositoryStructureSummary` → `buildProjectFileGraphFromRepositoryStructure` → `buildPackageDependencyGraphFromProjectFileGraph`.
-- **Opciones CLI:** `--out`, `--pretty`, `--include`, `--exclude`, `--max-files` y `--max-file-size-bytes`.
-- **Modo seguro:** preserva `followSymlinks: false`, `executeRepositoryCode: false` y Git history `metadata-only`; no ejecuta scripts ni código del repositorio analizado.
-- **Compatibilidad de typecheck:** `@codestellation/source-ingestion` expone tipos desde `src` para que `apps/cli` no requiera `dist` previo durante `typecheck`.
-- **Pruebas:** se agregó `apps/cli/test/index-local.test.ts` para parsing de argumentos, export serializable, JSON compacto/pretty, escritura con `--out` y errores claros.
-- **Limitación principal:** el CLI aún no lee contenido fuente para alimentar parsers, no exporta snapshots incrementales, no integra `analyzer-static` al graph-builder y no tiene comandos para ZIP/Git/API/UI.
+- **Comando base:** `codestellation index-local <path> --out <graph.json> [--pretty]`.
+- **Nueva opción:** `--parse-source-text` habilita lectura explícita de archivos candidatos TypeScript/TSX.
+- **Nuevo límite:** `--max-source-text-bytes <n>` define el máximo por archivo; el valor por defecto es 512 KiB.
+- **Salida adicional:** cuando la opción está activa, el JSON incluye `sourceTextParsing` con `ParserCoreParseBatchResult`, `AnalyzerStaticImportExportAnalysisResult` y resumen de archivos parseados, omitidos, símbolos, imports, exports y diagnósticos.
+- **Pipeline agregado:** inventario/scan/grafo metadata-only → selección de candidatos TypeScript/TSX → lectura UTF-8 bajo límite → `parseTypeScriptSourceText` → `analyzeStaticImportsAndExports`.
+- **Modo seguro:** solo lee paths del inventario candidato, valida que la ruta resuelta permanezca dentro del root real, respeta límites de tamaño y no ejecuta scripts ni importa módulos del repositorio analizado.
+- **Pruebas:** `apps/cli/test/index-local.test.ts` ahora cubre parsing de argumentos, export sin lectura de contenido, parseo opt-in, límite de tamaño, JSON compacto/pretty, escritura con `--out` y errores claros.
+- **Limitación principal:** el resultado de parser/analyzer aún no se integra al `graph-builder`; todavía no existen nodos de símbolos ni edges `imports`/`exports` en el grafo.
 
 ## 4. Próximo commit recomendado
 
-- **Commit sugerido:** `feat(cli): add safe source text parsing pipeline`
-- **Objetivo:** agregar una etapa CLI controlada que lea únicamente contenido de archivos candidatos TypeScript/TSX dentro de límites explícitos para alimentar `parser-typescript` y preparar relaciones imports/exports, sin ejecutar código ni resolver módulos todavía.
+- **Commit sugerido:** `feat(graph-builder): create import export edges from static analysis`
+- **Objetivo:** consumir el resultado de `analyzer-static` para preparar relaciones de imports/exports en el grafo canónico, sin resolver módulos todavía y sin crear dependencias package-level reales.
 - **Archivos probables:**
-  - `apps/cli/src/index.ts` o nuevo módulo de pipeline;
-  - `apps/cli/test/index-local.test.ts` o prueba nueva focalizada;
+  - `packages/graph-builder/src/*`;
+  - `packages/graph-builder/test/*`;
+  - `apps/cli/src/index.ts` si se expone el nuevo graph result;
   - `README.md`;
   - `CODESTELLATION_PROJECT_STATE.md`.
 - **Criterios esperados:**
-  - leer solo archivos candidatos permitidos por scanner y límites de tamaño;
-  - alimentar `parser-typescript` con `sourceText` explícito;
-  - mantener salida determinística y serializable;
-  - no ejecutar scripts ni importar módulos del repositorio analizado;
-  - no resolver imports todavía contra filesystem/package manifests.
+  - usar únicamente imports/exports ya normalizados por `analyzer-static`;
+  - mantener trazabilidad/procedencia hacia parser/analyzer;
+  - no resolver module specifiers contra disco, tsconfig paths o manifests;
+  - no ejecutar código del repositorio analizado;
+  - mantener salida serializable y determinística.
 
 ## 5. Reglas activas para los próximos commits
 
@@ -71,7 +71,7 @@ pnpm build
 pnpm run ci:check
 ```
 
-Validación focalizada para el Commit 027:
+Validación focalizada para el Commit 028:
 
 ```bash
 pnpm --filter @codestellation/cli typecheck
@@ -92,12 +92,12 @@ pnpm test -- apps/cli/test/index-local.test.ts
 - La detección de manifests todavía no valida contenido de `package.json`; por ahora solo detecta presencia por path, nombre y metadata del inventario.
 - El resumen estructural no resuelve workspaces ni dependencias; solo calcula estructura desde paths e inventario.
 - Los contratos de parser core todavía no tienen adaptador desde `repository-scanner`; se mantienen estructurales hasta integrar el pipeline.
-- El parser TypeScript solo parsea texto fuente provisto explícitamente; todavía no existe lectura de contenido de archivos desde el pipeline.
+- El parser TypeScript solo parsea texto fuente provisto explícitamente; el CLI ya puede leerlo de forma opt-in para TypeScript/TSX candidato bajo límite de tamaño.
 - El parser TypeScript no crea `Program`, no usa type checker y no resuelve imports contra archivos reales.
 - El analizador estático clasifica module specifiers pero todavía no los resuelve contra filesystem, package manifests, tsconfig paths o aliases.
 - El graph-builder crea nodos de paquete y edges `contains`, pero todavía no crea nodos de símbolos, edges `imports`/`exports`, edges `depends-on` reales ni relaciones derivadas de contenido de manifests.
 - El export CLI incluye metadata local serializable de la fuente; esto es esperado para uso local explícito, pero API/UI deberán aplicar política antes de exponer rutas sensibles.
-- El primer flujo CLI exporta el grafo metadata-only; todavía no incluye análisis por contenido fuente ni relaciones derivadas de parser/analyzer.
+- El flujo CLI puede adjuntar análisis por contenido fuente, pero el grafo exportado todavía no incluye relaciones derivadas de parser/analyzer.
 
 ## 8. Archivos clave actuales
 
