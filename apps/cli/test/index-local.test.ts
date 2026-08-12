@@ -125,6 +125,8 @@ describe('Codestellation CLI local index flow', () => {
         'helper'
       ]);
       expect('declaresEdges' in result.graph ? result.graph.declaresEdges : []).toHaveLength(2);
+      expect('referencesEdges' in result.graph ? result.graph.referencesEdges : []).toEqual([]);
+      expect('unresolvedSymbolReferences' in result.graph ? result.graph.unresolvedSymbolReferences : []).toEqual([]);
     });
   });
 

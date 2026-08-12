@@ -44,12 +44,14 @@ import {
 import {
   buildImportExportGraphFromStaticAnalysis,
   buildPackageDependencyGraphFromProjectFileGraph,
+  buildReferenceGraphFromParserResults,
   buildRelativeImportGraphFromSymbolGraph,
   buildSymbolGraphFromParserResults,
   buildProjectFileGraphFromRepositoryStructure,
   toSerializableGraphBuilderPackageDependencyGraphResult,
   type GraphBuilderImportExportGraphResult,
   type GraphBuilderPackageDependencyGraphResult,
+  type GraphBuilderReferenceGraphResult,
   type GraphBuilderRelativeImportGraphResult,
   type GraphBuilderSymbolGraphResult
 } from '@codestellation/graph-builder';
@@ -118,7 +120,7 @@ export interface CliLocalFolderGraphExport {
   readonly command: 'index-local';
   readonly generatedAt: string;
   readonly input: CliLocalFolderGraphExportInput;
-  readonly graph: GraphBuilderPackageDependencyGraphResult | GraphBuilderImportExportGraphResult | GraphBuilderSymbolGraphResult | GraphBuilderRelativeImportGraphResult;
+  readonly graph: GraphBuilderPackageDependencyGraphResult | GraphBuilderImportExportGraphResult | GraphBuilderSymbolGraphResult | GraphBuilderRelativeImportGraphResult | GraphBuilderReferenceGraphResult;
   readonly sourceTextParsing?: CliLocalFolderSourceTextParsingExport;
   readonly summary: CliLocalFolderGraphExportSummary;
 }
@@ -187,10 +189,12 @@ export async function createLocalFolderGraphExport(
     : undefined;
   const graph = sourceTextParsing === undefined
     ? packageGraph
-    : buildRelativeImportGraphFromSymbolGraph(
-        buildSymbolGraphFromParserResults(
-          buildImportExportGraphFromStaticAnalysis(packageGraph, sourceTextParsing.analysis),
-          sourceTextParsing.parseBatch
+    : buildReferenceGraphFromParserResults(
+        buildRelativeImportGraphFromSymbolGraph(
+          buildSymbolGraphFromParserResults(
+            buildImportExportGraphFromStaticAnalysis(packageGraph, sourceTextParsing.analysis),
+            sourceTextParsing.parseBatch
+          )
         )
       );
   const generatedAt = normalizeNow(options.now).toISOString();

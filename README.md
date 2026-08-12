@@ -173,9 +173,11 @@ Cuando recibe `ParserCoreParseBatchResult`, el graph-builder ya puede producir `
 
 Después del grafo de símbolos, el graph-builder puede producir `GraphBuilderRelativeImportGraphResult`, resolviendo imports relativos simples contra archivos locales ya inventariados. La resolución cubre matches determinísticos como `./util`, extensiones TypeScript/JavaScript/JSON conocidas e índices `./feature/index.*`, generando edges `imports` archivo→archivo. Los imports relativos sin match, absolutos o desconocidos permanecen como referencias no resueltas. Esta etapa no usa type checker, no interpreta `tsconfig.paths`, aliases, package exports ni manifests, no lee contenido adicional y no ejecuta código del repositorio analizado.
 
+El graph-builder también puede producir `GraphBuilderReferenceGraphResult` desde referencias normalizadas de `parser-core`, creando edges `references` archivo→símbolo cuando el `targetName` coincide de forma determinística con un único símbolo declarado en el mismo archivo. Las referencias sin match, ambiguas o sin archivo canónico se conservan como `unresolvedSymbolReferences`. Esta etapa es sintáctica y conservadora: no resuelve scopes complejos, no cruza módulos, no usa type checker y no ejecuta código del repositorio analizado.
+
 ## CLI local inicial
 
-La app `@codestellation/cli` ya expone el primer flujo local end-to-end del MVP 1. El comando `codestellation index-local <path> --out <graph.json> [--pretty]` resuelve una carpeta local explícita, crea inventario normalizado, clasifica archivos, detecta manifests, deriva estructura del repositorio y construye un JSON serializable con grafo canónico inicial. Sin lectura de contenido, el resultado usa `GraphBuilderPackageDependencyGraphResult`; con parseo opt-in, puede elevarse hasta `GraphBuilderRelativeImportGraphResult`.
+La app `@codestellation/cli` ya expone el primer flujo local end-to-end del MVP 1. El comando `codestellation index-local <path> --out <graph.json> [--pretty]` resuelve una carpeta local explícita, crea inventario normalizado, clasifica archivos, detecta manifests, deriva estructura del repositorio y construye un JSON serializable con grafo canónico inicial. Sin lectura de contenido, el resultado usa `GraphBuilderPackageDependencyGraphResult`; con parseo opt-in, puede elevarse hasta `GraphBuilderReferenceGraphResult`.
 
 Ejemplo de uso después de compilar:
 
@@ -184,7 +186,7 @@ pnpm build
 node apps/cli/dist/index.js index-local ./ruta/al/repositorio --out graph.json --pretty
 ```
 
-El CLI también acepta `--include`, `--exclude`, `--max-files` y `--max-file-size-bytes` para acotar la ingesta. Cuando se requiere análisis por contenido, `--parse-source-text` habilita una etapa explícita y controlada que lee únicamente archivos candidatos TypeScript/TSX dentro del límite `--max-source-text-bytes`, alimenta `parser-typescript` con `sourceText`, adjunta el resultado de `analyzer-static` al export JSON, genera edges `imports`/`exports` iniciales cuando hay targets canónicos seguros, crea nodos `symbol` con edges `declares` y resuelve imports relativos simples hacia archivos locales inventariados. Esta etapa no ejecuta scripts ni código del repositorio analizado, no interpreta `package.json`, no usa type checker, no procesa aliases/paths y todavía no crea edges `references` ni `calls`.
+El CLI también acepta `--include`, `--exclude`, `--max-files` y `--max-file-size-bytes` para acotar la ingesta. Cuando se requiere análisis por contenido, `--parse-source-text` habilita una etapa explícita y controlada que lee únicamente archivos candidatos TypeScript/TSX dentro del límite `--max-source-text-bytes`, alimenta `parser-typescript` con `sourceText`, adjunta el resultado de `analyzer-static` al export JSON, genera edges `imports`/`exports` iniciales cuando hay targets canónicos seguros, crea nodos `symbol` con edges `declares`, resuelve imports relativos simples hacia archivos locales inventariados y puede proyectar edges `references` cuando el parser entrega referencias locales por nombre. Esta etapa no ejecuta scripts ni código del repositorio analizado, no interpreta `package.json`, no usa type checker, no procesa aliases/paths y todavía no crea edges `calls`.
 
 ## Documentación del producto
 

@@ -4,3 +4,4 @@ export * from './import-export-edges.js';
 export * from './symbol-nodes.js';
 
 export * from './relative-import-edges.js';
+export * from './reference-edges.js';

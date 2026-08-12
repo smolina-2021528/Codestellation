@@ -6,36 +6,36 @@
 
 - **Fecha de actualización:** 2026-08-12
 - **Branch activa:** `ft-mvp1`
-- **Último commit lógico:** `feat(graph-builder): resolve relative import edges`
-- **Número operativo:** Commit 031
+- **Último commit lógico:** `feat(graph-builder): create reference edges from parser references`
+- **Número operativo:** Commit 032
 - **Release objetivo:** Release 0.0 — Fundaciones / MVP 1
-- **Fase del roadmap:** Fase 7 con flujo CLI end-to-end, parseo opt-in y grafo enriquecido con imports relativos iniciales
-- **Estado general:** stable scaffolding; normalized source inventory active; repository scan contracts active; deterministic metadata-only file classification active; Node package manifest detection active; repository structure summary active; parser core contracts active; TypeScript/TSX source-text parser active; static import/export analyzer active; graph builder project/folder/file/package node generation active; metadata-only contains edges active; graph builder import/export edges from static analysis active; graph builder symbol nodes and declares edges active; graph builder relative import edge resolution active; CLI local folder graph JSON export active; safe CLI source text parsing pipeline active; CLI opt-in relative import graph enrichment active
+- **Fase del roadmap:** Fase 7 con flujo CLI end-to-end, parseo opt-in, imports relativos y referencias sintácticas iniciales
+- **Estado general:** stable scaffolding; normalized source inventory active; repository scan contracts active; deterministic metadata-only file classification active; Node package manifest detection active; repository structure summary active; parser core contracts active; TypeScript/TSX source-text parser active; static import/export analyzer active; graph builder project/folder/file/package node generation active; metadata-only contains edges active; graph builder import/export edges from static analysis active; graph builder symbol nodes and declares edges active; graph builder relative import edge resolution active; graph builder parser reference edge projection active; CLI local folder graph JSON export active; safe CLI source text parsing pipeline active; CLI opt-in reference graph enrichment active
 
 ## 2. Objetivo actual
 
-Resolver imports relativos simples ya identificados por `analyzer-static` y conservados como `unresolvedImportReferences` en el grafo import/export. El commit conecta archivos locales cuando el specifier relativo coincide de forma determinística con un archivo inventariado (`./util`, `./feature/index`, extensiones TypeScript/JavaScript/JSON conocidas o `index.*`), sin leer contenido adicional, sin type checker, sin `tsconfig.paths`, sin aliases y sin ejecutar código del repositorio analizado.
+Crear una primera proyección de referencias sintácticas desde `ParserCoreReferenceRecord` hacia nodos `symbol` ya declarados. La resolución es deliberadamente conservadora: solo conecta referencias dentro del mismo archivo cuando el `targetName` coincide de forma determinística con un único símbolo local. Las referencias sin match, ambiguas o sin archivo canónico se conservan como no resueltas. No usa type checker, no resuelve referencias entre módulos, no infiere scopes complejos y no ejecuta código del repositorio analizado.
 
 ## 3. Último commit completado
 
-- **Commit:** `feat(graph-builder): resolve relative import edges`
+- **Commit:** `feat(graph-builder): create reference edges from parser references`
 - **Paquete principal:** `packages/graph-builder`.
-- **Archivo principal agregado:** `packages/graph-builder/src/relative-import-edges.ts`.
-- **Contrato nuevo:** `GraphBuilderRelativeImportGraphResult`.
-- **Función pública nueva:** `buildRelativeImportGraphFromSymbolGraph`.
-- **Alias público:** `buildRelativeImportGraph`.
-- **Validadores nuevos:** `isGraphBuilderRelativeImportGraphResult`, `assertGraphBuilderRelativeImportGraphResult` y `toSerializableGraphBuilderRelativeImportGraphResult`.
-- **Resolución:** transforma imports relativos no resueltos en edges `imports` archivo→archivo cuando existe match local determinístico.
-- **Referencias:** conserva referencias no resueltas cuando el target no existe o no puede resolverse de forma segura.
-- **CLI actualizado:** cuando `--parse-source-text` está activo, el CLI ahora puede elevar el JSON exportado a `GraphBuilderRelativeImportGraphResult`, después del graph de símbolos.
-- **Modo seguro:** no interpreta `tsconfig`, aliases, package exports, index resolution avanzada ni manifests; no usa type checker; no lee contenido adicional; no ejecuta código del repositorio analizado.
-- **Pruebas:** `packages/graph-builder/test/relative-import-edges.test.ts` cubre resolución `./file`, `./folder/index`, preservación de paquetes externos, conteos, serialización y snapshot canónico. `apps/cli/test/index-local.test.ts` confirma que el CLI opt-in resuelve `./util` en el fixture local.
-- **Limitación principal:** todavía no existen edges `references`, `calls`, dependencias reales de `package.json`, resolución de aliases/paths ni análisis semántico profundo.
+- **Archivo principal agregado:** `packages/graph-builder/src/reference-edges.ts`.
+- **Contrato nuevo:** `GraphBuilderReferenceGraphResult`.
+- **Función pública nueva:** `buildReferenceGraphFromParserResults`.
+- **Alias público:** `buildReferenceGraph`.
+- **Validadores nuevos:** `isGraphBuilderReferenceGraphResult`, `assertGraphBuilderReferenceGraphResult` y `toSerializableGraphBuilderReferenceGraphResult`.
+- **Resolución:** crea edges `references` archivo→símbolo cuando una referencia normalizada por `parser-core` coincide con un único símbolo del mismo archivo.
+- **Referencias no resueltas:** conserva referencias sin match, ambiguas o sin file node canónico como `unresolvedSymbolReferences` con razón visible.
+- **CLI actualizado:** cuando `--parse-source-text` está activo, el CLI ahora puede elevar el JSON exportado a `GraphBuilderReferenceGraphResult`, después del grafo de imports relativos.
+- **Modo seguro:** no usa type checker, no resuelve scopes, no cruza archivos, no resuelve aliases ni imports para referencias, no lee contenido adicional y no ejecuta código del repositorio analizado.
+- **Pruebas:** `packages/graph-builder/test/reference-edges.test.ts` cubre edges `references`, referencias no resueltas, conteos, serialización y snapshot canónico.
+- **Limitación principal:** el parser TypeScript actual todavía no emite referencias reales en el flujo CLI; este commit deja listo el contrato y el builder para cuando el parser empiece a poblar `ParserCoreReferenceRecord`.
 
 ## 4. Próximo commit recomendado
 
-- **Commit sugerido:** `feat(graph-builder): create reference edges from parser references`
-- **Objetivo:** usar `ParserCoreReferenceRecord` para crear relaciones `references` archivo/símbolo sin type checker y sin inferencia semántica profunda.
+- **Commit sugerido:** `feat(parser-typescript): extract identifier references`
+- **Objetivo:** poblar `ParserCoreReferenceRecord` desde el parser TypeScript para que el graph-builder pueda generar edges `references` en el flujo real del CLI.
 - **Archivos probables:**
   - `packages/graph-builder/src/*`;
   - `packages/graph-builder/test/*`;
@@ -73,12 +73,12 @@ pnpm build
 pnpm run ci:check
 ```
 
-Validación focalizada para el Commit 031:
+Validación focalizada para el Commit 032:
 
 ```bash
 pnpm --filter @codestellation/graph-builder typecheck
 pnpm --filter @codestellation/cli typecheck
-pnpm test -- packages/graph-builder/test/relative-import-edges.test.ts apps/cli/test/index-local.test.ts
+pnpm test -- packages/graph-builder/test/reference-edges.test.ts packages/graph-builder/test/relative-import-edges.test.ts apps/cli/test/index-local.test.ts
 ```
 
 ## 7. Riesgos conocidos
@@ -100,7 +100,7 @@ pnpm test -- packages/graph-builder/test/relative-import-edges.test.ts apps/cli/
 - El analizador estático clasifica module specifiers pero todavía no los resuelve contra filesystem, package manifests, tsconfig paths o aliases.
 - El graph-builder crea nodos externos de package desde imports de paquetes/built-ins, pero esos nodos son inferencias `possible`, no dependencias declaradas ni verificadas.
 - Los imports relativos simples ya pueden generar edges `imports` archivo→archivo cuando existe match determinístico; imports absolutos, desconocidos o relativos sin target se conservan como no resueltos.
-- El graph-builder ya crea nodos de símbolos, edges `declares` y edges `imports` relativos simples archivo→archivo; todavía no crea edges `references`, `calls`, `depends-on` reales ni relaciones derivadas de contenido de manifests.
+- El graph-builder ya crea nodos de símbolos, edges `declares` y edges `imports` relativos simples archivo→archivo; ya puede crear edges `references` sintácticos archivo→símbolo desde referencias parser-core de mismo archivo; todavía no crea edges `calls`, `depends-on` reales ni relaciones derivadas de contenido de manifests.
 - El export CLI incluye metadata local serializable de la fuente; esto es esperado para uso local explícito, pero API/UI deberán aplicar política antes de exponer rutas sensibles.
 
 ## 8. Archivos clave actuales
@@ -147,8 +147,10 @@ pnpm test -- packages/graph-builder/test/relative-import-edges.test.ts apps/cli/
 - `packages/graph-builder/src/import-export-edges.ts`
 - `packages/graph-builder/src/symbol-nodes.ts`
 - `packages/graph-builder/src/relative-import-edges.ts`
+- `packages/graph-builder/src/reference-edges.ts`
 - `packages/graph-builder/test/project-file-nodes.test.ts`
 - `packages/graph-builder/test/package-dependency-edges.test.ts`
 - `packages/graph-builder/test/import-export-edges.test.ts`
 - `packages/graph-builder/test/symbol-nodes.test.ts`
 - `packages/graph-builder/test/relative-import-edges.test.ts`
+- `packages/graph-builder/test/reference-edges.test.ts`
