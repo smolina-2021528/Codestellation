@@ -111,13 +111,14 @@ describe('Codestellation CLI local index flow', () => {
       expect(result.sourceTextParsing?.analysis.imports.map((record) => record.moduleSpecifier)).toEqual([
         './util'
       ]);
-      expect('importsEdges' in result.graph ? result.graph.importsEdges : []).toEqual([]);
+      expect('importsEdges' in result.graph ? result.graph.importsEdges.map((edge) => edge.attributes['import.moduleSpecifier']) : []).toEqual(['./util']);
       expect('exportsEdges' in result.graph ? result.graph.exportsEdges.map((edge) => edge.attributes['export.name']) : []).toEqual([
         'answer',
         'helper'
       ]);
-      expect('unresolvedImportReferences' in result.graph ? result.graph.unresolvedImportReferences.map((reference) => reference.moduleSpecifier) : []).toEqual([
-        './util'
+      expect('unresolvedImportReferences' in result.graph ? result.graph.unresolvedImportReferences : []).toEqual([]);
+      expect('resolvedRelativeImportReferences' in result.graph ? result.graph.resolvedRelativeImportReferences.map((reference) => reference.resolvedFilePath) : []).toEqual([
+        'src/util.ts'
       ]);
       expect('symbolNodes' in result.graph ? result.graph.symbolNodes.map((node) => node.symbol.name) : []).toEqual([
         'answer',

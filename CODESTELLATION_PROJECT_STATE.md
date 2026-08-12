@@ -6,37 +6,36 @@
 
 - **Fecha de actualización:** 2026-08-12
 - **Branch activa:** `ft-mvp1`
-- **Último commit lógico:** `feat(graph-builder): create symbol nodes from parser results`
-- **Número operativo:** Commit 030
+- **Último commit lógico:** `feat(graph-builder): resolve relative import edges`
+- **Número operativo:** Commit 031
 - **Release objetivo:** Release 0.0 — Fundaciones / MVP 1
-- **Fase del roadmap:** Fase 7 con flujo CLI end-to-end, parseo opt-in y grafo enriquecido con símbolos iniciales
-- **Estado general:** stable scaffolding; normalized source inventory active; repository scan contracts active; deterministic metadata-only file classification active; Node package manifest detection active; repository structure summary active; parser core contracts active; TypeScript/TSX source-text parser active; static import/export analyzer active; graph builder project/folder/file/package node generation active; metadata-only contains edges active; graph builder import/export edges from static analysis active; graph builder symbol nodes and declares edges active; CLI local folder graph JSON export active; safe CLI source text parsing pipeline active; CLI opt-in symbol graph enrichment active
+- **Fase del roadmap:** Fase 7 con flujo CLI end-to-end, parseo opt-in y grafo enriquecido con imports relativos iniciales
+- **Estado general:** stable scaffolding; normalized source inventory active; repository scan contracts active; deterministic metadata-only file classification active; Node package manifest detection active; repository structure summary active; parser core contracts active; TypeScript/TSX source-text parser active; static import/export analyzer active; graph builder project/folder/file/package node generation active; metadata-only contains edges active; graph builder import/export edges from static analysis active; graph builder symbol nodes and declares edges active; graph builder relative import edge resolution active; CLI local folder graph JSON export active; safe CLI source text parsing pipeline active; CLI opt-in relative import graph enrichment active
 
 ## 2. Objetivo actual
 
-Consumir `ParserCoreParseBatchResult` desde `graph-builder` para crear nodos canónicos `symbol` y relaciones `declares` archivo→símbolo. El commit usa únicamente símbolos ya normalizados por parser-core, conserva parentId hacia el archivo propietario, adjunta procedencia de análisis estático/parser y no resuelve referencias profundas, llamadas, usos ni relaciones entre símbolos. Cuando el CLI se ejecuta con `--parse-source-text`, el JSON exportado puede elevarse a `GraphBuilderSymbolGraphResult`.
+Resolver imports relativos simples ya identificados por `analyzer-static` y conservados como `unresolvedImportReferences` en el grafo import/export. El commit conecta archivos locales cuando el specifier relativo coincide de forma determinística con un archivo inventariado (`./util`, `./feature/index`, extensiones TypeScript/JavaScript/JSON conocidas o `index.*`), sin leer contenido adicional, sin type checker, sin `tsconfig.paths`, sin aliases y sin ejecutar código del repositorio analizado.
 
 ## 3. Último commit completado
 
-- **Commit:** `feat(graph-builder): create symbol nodes from parser results`
+- **Commit:** `feat(graph-builder): resolve relative import edges`
 - **Paquete principal:** `packages/graph-builder`.
-- **Archivo principal agregado:** `packages/graph-builder/src/symbol-nodes.ts`.
-- **Contrato nuevo:** `GraphBuilderSymbolGraphResult`.
-- **Función pública nueva:** `buildSymbolGraphFromParserResults`.
-- **Alias público:** `buildSymbolGraph`.
-- **Validadores nuevos:** `isGraphBuilderSymbolGraphResult`, `assertGraphBuilderSymbolGraphResult` y `toSerializableGraphBuilderSymbolGraphResult`.
-- **CLI actualizado:** cuando `--parse-source-text` está activo, el CLI construye primero el grafo import/export y luego lo enriquece con símbolos del batch de parser, devolviendo un grafo con `symbolNodes` y `declaresEdges`.
-- **Nodos symbol:** se crean desde `ParserCoreSymbolRecord`, con identidad estable por path y `localId`, parentId hacia el archivo propietario, `symbolKind`, `exportKind`, path, rango opcional, facetas de parser y procedencia `static-analysis`.
-- **Edges declares:** se crean desde cada archivo hacia sus símbolos declarados usando metadata normalizada del parser y rango opcional como source location.
-- **Exports de símbolos:** se infiere `exportKind` del símbolo comparando el nombre contra los exports normalizados del mismo archivo; `type-only` se representa como export nombrado con faceta visible.
-- **Modo seguro:** no resuelve referencias entre símbolos, no genera edges `references` ni `calls`, no interpreta manifests, no resuelve imports relativos, no crea dependencias package-level reales y no ejecuta código del repositorio analizado.
-- **Pruebas:** `packages/graph-builder/test/symbol-nodes.test.ts` cubre nodos symbol, edges declares, conteos, serialización y snapshot canónico. `apps/cli/test/index-local.test.ts` confirma que el CLI opt-in devuelve símbolos y declares.
-- **Limitación principal:** todavía no existe resolución de imports relativos, edges `references`, edges `calls`, uso de type checker, interpretación de `package.json`, ni nodos/relaciones semánticas profundas.
+- **Archivo principal agregado:** `packages/graph-builder/src/relative-import-edges.ts`.
+- **Contrato nuevo:** `GraphBuilderRelativeImportGraphResult`.
+- **Función pública nueva:** `buildRelativeImportGraphFromSymbolGraph`.
+- **Alias público:** `buildRelativeImportGraph`.
+- **Validadores nuevos:** `isGraphBuilderRelativeImportGraphResult`, `assertGraphBuilderRelativeImportGraphResult` y `toSerializableGraphBuilderRelativeImportGraphResult`.
+- **Resolución:** transforma imports relativos no resueltos en edges `imports` archivo→archivo cuando existe match local determinístico.
+- **Referencias:** conserva referencias no resueltas cuando el target no existe o no puede resolverse de forma segura.
+- **CLI actualizado:** cuando `--parse-source-text` está activo, el CLI ahora puede elevar el JSON exportado a `GraphBuilderRelativeImportGraphResult`, después del graph de símbolos.
+- **Modo seguro:** no interpreta `tsconfig`, aliases, package exports, index resolution avanzada ni manifests; no usa type checker; no lee contenido adicional; no ejecuta código del repositorio analizado.
+- **Pruebas:** `packages/graph-builder/test/relative-import-edges.test.ts` cubre resolución `./file`, `./folder/index`, preservación de paquetes externos, conteos, serialización y snapshot canónico. `apps/cli/test/index-local.test.ts` confirma que el CLI opt-in resuelve `./util` en el fixture local.
+- **Limitación principal:** todavía no existen edges `references`, `calls`, dependencias reales de `package.json`, resolución de aliases/paths ni análisis semántico profundo.
 
 ## 4. Próximo commit recomendado
 
-- **Commit sugerido:** `feat(graph-builder): resolve relative import edges`
-- **Objetivo:** resolver imports relativos simples entre archivos ya parseados para conectar archivos locales o módulos internos sin usar type checker ni tsconfig paths todavía.
+- **Commit sugerido:** `feat(graph-builder): create reference edges from parser references`
+- **Objetivo:** usar `ParserCoreReferenceRecord` para crear relaciones `references` archivo/símbolo sin type checker y sin inferencia semántica profunda.
 - **Archivos probables:**
   - `packages/graph-builder/src/*`;
   - `packages/graph-builder/test/*`;
@@ -44,10 +43,10 @@ Consumir `ParserCoreParseBatchResult` desde `graph-builder` para crear nodos can
   - `README.md`;
   - `CODESTELLATION_PROJECT_STATE.md`.
 - **Criterios esperados:**
-  - resolver únicamente specifiers relativos seguros (`./` y `../`) contra archivos candidatos del inventario;
-  - no leer contenido adicional;
-  - no usar type checker ni `tsconfig.paths`;
-  - preservar referencias no resueltas cuando no exista match único;
+  - consumir solo referencias normalizadas por parser-core;
+  - no usar type checker;
+  - no resolver llamadas ni usos complejos todavía;
+  - preservar referencias ambiguas como no resueltas;
   - no ejecutar código del repositorio analizado.
 
 ## 5. Reglas activas para los próximos commits
@@ -74,12 +73,12 @@ pnpm build
 pnpm run ci:check
 ```
 
-Validación focalizada para el Commit 030:
+Validación focalizada para el Commit 031:
 
 ```bash
 pnpm --filter @codestellation/graph-builder typecheck
 pnpm --filter @codestellation/cli typecheck
-pnpm test -- packages/graph-builder/test/symbol-nodes.test.ts apps/cli/test/index-local.test.ts
+pnpm test -- packages/graph-builder/test/relative-import-edges.test.ts apps/cli/test/index-local.test.ts
 ```
 
 ## 7. Riesgos conocidos
@@ -100,8 +99,8 @@ pnpm test -- packages/graph-builder/test/symbol-nodes.test.ts apps/cli/test/inde
 - El parser TypeScript no crea `Program`, no usa type checker y no resuelve imports contra archivos reales.
 - El analizador estático clasifica module specifiers pero todavía no los resuelve contra filesystem, package manifests, tsconfig paths o aliases.
 - El graph-builder crea nodos externos de package desde imports de paquetes/built-ins, pero esos nodos son inferencias `possible`, no dependencias declaradas ni verificadas.
-- Los imports relativos, absolutos o desconocidos todavía no generan edges `imports`; se conservan como `unresolvedImportReferences`.
-- El graph-builder ya crea nodos de símbolos y edges `declares`; todavía no crea edges `references`, `calls`, `depends-on` reales ni relaciones derivadas de contenido de manifests.
+- Los imports relativos simples ya pueden generar edges `imports` archivo→archivo cuando existe match determinístico; imports absolutos, desconocidos o relativos sin target se conservan como no resueltos.
+- El graph-builder ya crea nodos de símbolos, edges `declares` y edges `imports` relativos simples archivo→archivo; todavía no crea edges `references`, `calls`, `depends-on` reales ni relaciones derivadas de contenido de manifests.
 - El export CLI incluye metadata local serializable de la fuente; esto es esperado para uso local explícito, pero API/UI deberán aplicar política antes de exponer rutas sensibles.
 
 ## 8. Archivos clave actuales
@@ -147,7 +146,9 @@ pnpm test -- packages/graph-builder/test/symbol-nodes.test.ts apps/cli/test/inde
 - `packages/graph-builder/src/package-dependency-edges.ts`
 - `packages/graph-builder/src/import-export-edges.ts`
 - `packages/graph-builder/src/symbol-nodes.ts`
+- `packages/graph-builder/src/relative-import-edges.ts`
 - `packages/graph-builder/test/project-file-nodes.test.ts`
 - `packages/graph-builder/test/package-dependency-edges.test.ts`
 - `packages/graph-builder/test/import-export-edges.test.ts`
 - `packages/graph-builder/test/symbol-nodes.test.ts`
+- `packages/graph-builder/test/relative-import-edges.test.ts`

@@ -656,12 +656,37 @@ function assertSourceGraphShape(
     throw new RangeError('Graph builder import/export graph source node counts are inconsistent.');
   }
 
-  if (sourceGraph.packageNodes.some((node, index) => packageNodes[index]?.id !== node.id)) {
-    throw new RangeError('Graph builder import/export graph local package nodes must be preserved first.');
-  }
+  assertLocalPackageNodesArePreservedFirst(sourceGraph.packageNodes, packageNodes);
 
   if (sourceGraph.containsEdges.length !== containsEdges.length || sourceGraph.dependencyEdges.length !== dependencyEdges.length) {
     throw new RangeError('Graph builder import/export graph source edge counts are inconsistent.');
+  }
+}
+
+
+function assertLocalPackageNodesArePreservedFirst(
+  sourcePackageNodes: readonly PackageGraphNode[],
+  packageNodes: readonly PackageGraphNode[]
+): void {
+  const sourcePackageNodeIds = new Set(sourcePackageNodes.map((node) => node.id));
+  const remainingSourcePackageNodeIds = new Set(sourcePackageNodeIds);
+  let hasSeenExternalPackageNode = false;
+
+  for (const node of packageNodes) {
+    if (sourcePackageNodeIds.has(node.id)) {
+      if (hasSeenExternalPackageNode) {
+        throw new RangeError('Graph builder import/export graph local package nodes must be preserved before external package nodes.');
+      }
+
+      remainingSourcePackageNodeIds.delete(node.id);
+      continue;
+    }
+
+    hasSeenExternalPackageNode = true;
+  }
+
+  if (remainingSourcePackageNodeIds.size > 0) {
+    throw new RangeError('Graph builder import/export graph package nodes must include every source package node.');
   }
 }
 
