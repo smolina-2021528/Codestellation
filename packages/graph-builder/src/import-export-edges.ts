@@ -105,7 +105,12 @@ export function buildImportExportGraphFromStaticAnalysis(
   const normalizedAnalysis = toSerializableAnalyzerStaticImportExportAnalysisResult(sourceAnalysis);
   const fileNodesByPath = new Map(normalizedSourceGraph.fileNodes.map((node) => [node.file.path, node]));
   const observedAt = normalizedSourceGraph.sourceGraph.sourceStructure.packageManifestDetection.sourceScan.metadata.completedAt;
-  const importResolution = createImportEdges(normalizedAnalysis.imports, fileNodesByPath, observedAt);
+  const importResolution = createImportEdges(
+    normalizedAnalysis.imports,
+    fileNodesByPath,
+    normalizedSourceGraph.projectNode.id,
+    observedAt
+  );
   const localPackageNodes = normalizedSourceGraph.packageNodes;
   const allPackageNodes = [
     ...localPackageNodes,
@@ -207,7 +212,7 @@ export function toSerializableGraphBuilderImportExportGraphResult(
   const projectNode = toSerializableGraphNode(result.projectNode) as ProjectGraphNode;
   const folderNodes = normalizeFolderNodes(result.folderNodes);
   const fileNodes = normalizeFileNodes(result.fileNodes);
-  const packageNodes = normalizePackageNodes(result.packageNodes);
+  const packageNodes = normalizePackageNodes(result.packageNodes, sourceGraph.packageNodes);
   const containsEdges = sourceGraph.containsEdges;
   const dependencyEdges = sourceGraph.dependencyEdges;
   const importsEdges = normalizeImportsEdges(result.importsEdges);
@@ -275,6 +280,7 @@ export function toSerializableGraphBuilderImportExportGraphResult(
 function createImportEdges(
   imports: readonly AnalyzerStaticImportReference[],
   fileNodesByPath: ReadonlyMap<string, FileGraphNode>,
+  externalPackageParentNodeId: GraphNodeId,
   observedAt: string
 ): ImportResolutionAccumulator {
   const accumulator: ImportResolutionAccumulator = {
@@ -297,6 +303,7 @@ function createImportEdges(
         packageName,
         importReference.specifierKind,
         importReference.moduleSpecifier,
+        externalPackageParentNodeId,
         observedAt
       );
 
@@ -431,6 +438,7 @@ function getOrCreateExternalPackageNode(
   packageName: string,
   specifierKind: 'package' | 'builtin',
   moduleSpecifier: string,
+  parentNodeId: GraphNodeId,
   observedAt: string
 ): PackageGraphNode {
   const key = `${specifierKind}:${packageName}`;
@@ -444,6 +452,7 @@ function getOrCreateExternalPackageNode(
     schemaVersion: GRAPH_NODE_SCHEMA_VERSION,
     id: createGraphNodeId(toGraphNodeIdToken('package', 'external', specifierKind, packageName)),
     kind: 'package',
+    parentId: parentNodeId,
     display: createDisplay(packageName, `${specifierKind} import target`, `External ${specifierKind} target observed in source imports.`),
     analysis: createAnalysis([
       'package',
@@ -713,10 +722,31 @@ function normalizeFileNodes(nodes: readonly FileGraphNode[]): readonly FileGraph
     .sort(compareFileNodes);
 }
 
-function normalizePackageNodes(nodes: readonly PackageGraphNode[]): readonly PackageGraphNode[] {
-  return requireArray(nodes, 'packageNodes')
-    .map((node) => toSerializableGraphNode(node) as PackageGraphNode)
+function normalizePackageNodes(
+  nodes: readonly PackageGraphNode[],
+  sourcePackageNodes: readonly PackageGraphNode[]
+): readonly PackageGraphNode[] {
+  const normalizedNodes = requireArray(nodes, 'packageNodes')
+    .map((node) => toSerializableGraphNode(node) as PackageGraphNode);
+  const sourcePackageNodeIds = new Set(sourcePackageNodes.map((node) => node.id));
+  const normalizedNodesById = new Map(normalizedNodes.map((node) => [node.id, node]));
+  const localPackageNodes = sourcePackageNodes.map((sourceNode) => {
+    const matchingNode = normalizedNodesById.get(sourceNode.id);
+
+    if (matchingNode === undefined) {
+      throw new RangeError('Graph builder import/export graph package nodes must include every source package node.');
+    }
+
+    return matchingNode;
+  });
+  const externalPackageNodes = normalizedNodes
+    .filter((node) => !sourcePackageNodeIds.has(node.id))
     .sort(comparePackageNodes);
+
+  return [
+    ...localPackageNodes,
+    ...externalPackageNodes
+  ];
 }
 
 function normalizeImportsEdges(edges: readonly ImportsGraphEdge[]): readonly ImportsGraphEdge[] {

@@ -119,6 +119,11 @@ describe('Codestellation CLI local index flow', () => {
       expect('unresolvedImportReferences' in result.graph ? result.graph.unresolvedImportReferences.map((reference) => reference.moduleSpecifier) : []).toEqual([
         './util'
       ]);
+      expect('symbolNodes' in result.graph ? result.graph.symbolNodes.map((node) => node.symbol.name) : []).toEqual([
+        'answer',
+        'helper'
+      ]);
+      expect('declaresEdges' in result.graph ? result.graph.declaresEdges : []).toHaveLength(2);
     });
   });
 

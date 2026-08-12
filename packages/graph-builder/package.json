@@ -18,6 +18,7 @@
   "dependencies": {
     "@codestellation/analyzer-static": "workspace:*",
     "@codestellation/graph-model": "workspace:*",
+    "@codestellation/parser-core": "workspace:*",
     "@codestellation/repository-scanner": "workspace:*"
   }
 }

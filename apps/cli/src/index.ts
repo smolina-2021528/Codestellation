@@ -44,10 +44,12 @@ import {
 import {
   buildImportExportGraphFromStaticAnalysis,
   buildPackageDependencyGraphFromProjectFileGraph,
+  buildSymbolGraphFromParserResults,
   buildProjectFileGraphFromRepositoryStructure,
   toSerializableGraphBuilderPackageDependencyGraphResult,
   type GraphBuilderImportExportGraphResult,
-  type GraphBuilderPackageDependencyGraphResult
+  type GraphBuilderPackageDependencyGraphResult,
+  type GraphBuilderSymbolGraphResult
 } from '@codestellation/graph-builder';
 
 export const CODESTELLATION_CLI_LOCAL_FOLDER_GRAPH_EXPORT_SCHEMA_VERSION = 1 as const;
@@ -114,7 +116,7 @@ export interface CliLocalFolderGraphExport {
   readonly command: 'index-local';
   readonly generatedAt: string;
   readonly input: CliLocalFolderGraphExportInput;
-  readonly graph: GraphBuilderPackageDependencyGraphResult | GraphBuilderImportExportGraphResult;
+  readonly graph: GraphBuilderPackageDependencyGraphResult | GraphBuilderImportExportGraphResult | GraphBuilderSymbolGraphResult;
   readonly sourceTextParsing?: CliLocalFolderSourceTextParsingExport;
   readonly summary: CliLocalFolderGraphExportSummary;
 }
@@ -183,7 +185,10 @@ export async function createLocalFolderGraphExport(
     : undefined;
   const graph = sourceTextParsing === undefined
     ? packageGraph
-    : buildImportExportGraphFromStaticAnalysis(packageGraph, sourceTextParsing.analysis);
+    : buildSymbolGraphFromParserResults(
+        buildImportExportGraphFromStaticAnalysis(packageGraph, sourceTextParsing.analysis),
+        sourceTextParsing.parseBatch
+      );
   const generatedAt = normalizeNow(options.now).toISOString();
 
   return withOptionalSourceTextParsing({
