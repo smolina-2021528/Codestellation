@@ -103,6 +103,7 @@ export interface CliLocalFolderSourceTextParsingSummary {
   readonly symbolCount: number;
   readonly importCount: number;
   readonly exportCount: number;
+  readonly referenceCount: number;
   readonly diagnosticCount: number;
 }
 
@@ -475,6 +476,7 @@ async function createSafeSourceTextParsingExport(
       symbolCount: parseBatch.summary.symbolCount,
       importCount: parseBatch.summary.importCount,
       exportCount: parseBatch.summary.exportCount,
+      referenceCount: parseBatch.summary.referenceCount,
       diagnosticCount: parseBatch.summary.diagnosticCount + analysis.summary.diagnosticCount
     }
   };

@@ -102,7 +102,8 @@ describe('Codestellation CLI local index flow', () => {
         parsedFileCount: 2,
         skippedOversizedFileCount: 0,
         importCount: 1,
-        exportCount: 2
+        exportCount: 2,
+        referenceCount: 1
       });
       expect(result.sourceTextParsing?.parseBatch.files.map((file) => file.file.path)).toEqual([
         'src/index.ts',
@@ -126,7 +127,14 @@ describe('Codestellation CLI local index flow', () => {
       ]);
       expect('declaresEdges' in result.graph ? result.graph.declaresEdges : []).toHaveLength(2);
       expect('referencesEdges' in result.graph ? result.graph.referencesEdges : []).toEqual([]);
-      expect('unresolvedSymbolReferences' in result.graph ? result.graph.unresolvedSymbolReferences : []).toEqual([]);
+      expect('unresolvedSymbolReferences' in result.graph ? result.graph.unresolvedSymbolReferences.map((reference) => [
+        reference.filePath,
+        reference.targetName,
+        reference.referenceKind,
+        reference.reason
+      ]) : []).toEqual([
+        ['src/index.ts', 'helper', 'call', 'no-local-symbol-match']
+      ]);
     });
   });
 

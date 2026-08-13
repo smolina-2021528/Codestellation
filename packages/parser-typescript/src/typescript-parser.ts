@@ -5,6 +5,7 @@ import {
   PARSER_CORE_PARSE_UNIT_RESULT_SCHEMA_VERSION,
   PARSER_CORE_PARSER_DESCRIPTOR_SCHEMA_VERSION,
   PARSER_CORE_POSITION_SCHEMA_VERSION,
+  PARSER_CORE_REFERENCE_SCHEMA_VERSION,
   PARSER_CORE_SYMBOL_SCHEMA_VERSION,
   PARSER_CORE_TEXT_RANGE_SCHEMA_VERSION,
   parseParserCoreDiagnosticCode,
@@ -23,6 +24,7 @@ import {
   type ParserCoreParseUnitResult,
   type ParserCoreParseableFile,
   type ParserCoreParserDescriptor,
+  type ParserCoreReferenceKind,
   type ParserCoreReferenceRecord,
   type ParserCoreStatus,
   type ParserCoreSymbolKind,
@@ -31,7 +33,7 @@ import {
 } from '@codestellation/parser-core';
 
 export const TYPESCRIPT_PARSER_ID = parseParserCorePluginId('typescript-parser');
-export const TYPESCRIPT_PARSER_VERSION = '0.1.1';
+export const TYPESCRIPT_PARSER_VERSION = '0.1.2';
 export const TYPESCRIPT_PARSER_SUPPORTED_LANGUAGES = [
   'typescript',
   'tsx'
@@ -48,6 +50,11 @@ interface TextMatch {
   readonly exportKind?: ParserCoreExportKind;
   readonly statementStart: number;
   readonly statementEnd: number;
+}
+
+interface IgnoredIdentifierSpan {
+  readonly startOffset: number;
+  readonly endOffset: number;
 }
 
 interface SourceLocationIndex {
@@ -76,6 +83,83 @@ const CLASS_DECLARATION_PATTERN = createNamedDeclarationPattern('class');
 const INTERFACE_DECLARATION_PATTERN = createNamedDeclarationPattern('interface');
 const TYPE_DECLARATION_PATTERN = createNamedDeclarationPattern('type');
 const ENUM_DECLARATION_PATTERN = createNamedDeclarationPattern('enum');
+const IDENTIFIER_TOKEN_PATTERN = new RegExp(`\\b${IDENTIFIER_PATTERN}\\b`, 'g');
+const PARAMETER_LIST_PATTERN = /\(([^()]*)\)\s*(?::\s*[A-Za-z_$][A-Za-z0-9_$.<>[\]|&\s,?]*)?\s*[{:=>]/g;
+
+const TYPESCRIPT_IDENTIFIER_KEYWORDS = new Set([
+  'abstract',
+  'any',
+  'as',
+  'async',
+  'await',
+  'bigint',
+  'boolean',
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'constructor',
+  'continue',
+  'debugger',
+  'declare',
+  'default',
+  'delete',
+  'do',
+  'else',
+  'enum',
+  'export',
+  'extends',
+  'false',
+  'finally',
+  'for',
+  'from',
+  'function',
+  'get',
+  'if',
+  'implements',
+  'import',
+  'in',
+  'infer',
+  'instanceof',
+  'interface',
+  'keyof',
+  'let',
+  'module',
+  'namespace',
+  'never',
+  'new',
+  'null',
+  'number',
+  'object',
+  'of',
+  'private',
+  'protected',
+  'public',
+  'readonly',
+  'require',
+  'return',
+  'satisfies',
+  'set',
+  'static',
+  'string',
+  'super',
+  'switch',
+  'symbol',
+  'this',
+  'throw',
+  'true',
+  'try',
+  'type',
+  'typeof',
+  'undefined',
+  'unknown',
+  'var',
+  'void',
+  'while',
+  'with',
+  'yield'
+]);
 
 export class TypeScriptParser implements ParserCoreLanguageParserPlugin {
   public readonly id = TYPESCRIPT_PARSER_ID;
@@ -161,7 +245,7 @@ export function parseTypeScriptSourceText(
   const symbols = declarations.map((declaration) => createSymbolRecord(locationIndex, declaration));
   const imports = collectImports(locationIndex);
   const exports = collectExports(locationIndex, declarations);
-  const references: readonly ParserCoreReferenceRecord[] = [];
+  const references = collectReferences(locationIndex, declarations);
   const status: ParserCoreStatus = diagnostics.length > 0 ? 'partial' : 'completed';
 
   return createParseUnitResult({
@@ -451,6 +535,353 @@ function collectParseDiagnostics(
     path: file.path,
     range: createRangeFromOffsets(locationIndex, imbalance.offset, imbalance.offset + 1)
   }];
+}
+
+function collectReferences(
+  locationIndex: SourceLocationIndex,
+  declarations: readonly TextMatch[]
+): readonly ParserCoreReferenceRecord[] {
+  const ignoredSpans = createIgnoredIdentifierSpans(locationIndex, declarations);
+  const ignoredNames = collectIgnoredIdentifierNames(locationIndex.text);
+  const references: ParserCoreReferenceRecord[] = [];
+
+  for (const match of locationIndex.text.matchAll(IDENTIFIER_TOKEN_PATTERN)) {
+    const targetName = match[0];
+    const startOffset = match.index;
+    const endOffset = startOffset + targetName.length;
+
+    if (shouldSkipIdentifierReference(
+      locationIndex.text,
+      targetName,
+      startOffset,
+      endOffset,
+      ignoredSpans,
+      ignoredNames
+    )) {
+      continue;
+    }
+
+    references.push(createReferenceRecord(
+      locationIndex,
+      targetName,
+      inferReferenceKind(locationIndex.text, endOffset),
+      startOffset,
+      endOffset
+    ));
+  }
+
+  return references;
+}
+
+function createIgnoredIdentifierSpans(
+  locationIndex: SourceLocationIndex,
+  declarations: readonly TextMatch[]
+): readonly IgnoredIdentifierSpan[] {
+  return [
+    ...collectImportStatementSpans(locationIndex),
+    ...collectExportDeclarationSpans(locationIndex),
+    ...collectDeclarationIdentifierSpans(locationIndex, declarations),
+    ...collectParameterIdentifierSpans(locationIndex.text)
+  ].sort((left, right) => left.startOffset - right.startOffset || left.endOffset - right.endOffset);
+}
+
+function collectImportStatementSpans(locationIndex: SourceLocationIndex): readonly IgnoredIdentifierSpan[] {
+  const spans: IgnoredIdentifierSpan[] = [];
+
+  for (const match of locationIndex.text.matchAll(STATIC_IMPORT_PATTERN)) {
+    const startOffset = offsetWithoutLeadingLineBreak(match);
+    spans.push({
+      startOffset,
+      endOffset: startOffset + match[0].trimStart().length
+    });
+  }
+
+  return spans;
+}
+
+function collectExportDeclarationSpans(locationIndex: SourceLocationIndex): readonly IgnoredIdentifierSpan[] {
+  const spans: IgnoredIdentifierSpan[] = [];
+
+  for (const match of locationIndex.text.matchAll(EXPORT_DECLARATION_PATTERN)) {
+    const startOffset = offsetWithoutLeadingLineBreak(match);
+    spans.push({
+      startOffset,
+      endOffset: startOffset + match[0].trimStart().length
+    });
+  }
+
+  return spans;
+}
+
+function collectDeclarationIdentifierSpans(
+  locationIndex: SourceLocationIndex,
+  declarations: readonly TextMatch[]
+): readonly IgnoredIdentifierSpan[] {
+  const spans: IgnoredIdentifierSpan[] = [];
+
+  for (const declaration of declarations) {
+    const nameOffset = findDeclarationNameOffset(locationIndex.text, declaration);
+
+    if (nameOffset === undefined) {
+      continue;
+    }
+
+    spans.push({
+      startOffset: nameOffset,
+      endOffset: nameOffset + declaration.name.length
+    });
+  }
+
+  return spans;
+}
+
+function collectParameterIdentifierSpans(sourceText: string): readonly IgnoredIdentifierSpan[] {
+  const spans: IgnoredIdentifierSpan[] = [];
+
+  for (const parameterListMatch of sourceText.matchAll(PARAMETER_LIST_PATTERN)) {
+    const parameterList = parameterListMatch[1];
+    const parameterListStart = (parameterListMatch.index ?? 0) + 1;
+
+    if (parameterList === undefined) {
+      continue;
+    }
+
+    for (const parameterMatch of parameterList.matchAll(IDENTIFIER_TOKEN_PATTERN)) {
+      const parameterName = parameterMatch[0];
+      const parameterStart = parameterListStart + parameterMatch.index;
+
+      if (TYPESCRIPT_IDENTIFIER_KEYWORDS.has(parameterName)) {
+        continue;
+      }
+
+      if (isTypeAnnotationIdentifier(parameterList, parameterMatch.index)) {
+        continue;
+      }
+
+      spans.push({
+        startOffset: parameterStart,
+        endOffset: parameterStart + parameterName.length
+      });
+    }
+  }
+
+  return spans;
+}
+
+function collectIgnoredIdentifierNames(sourceText: string): ReadonlySet<string> {
+  const names = new Set<string>();
+
+  for (const parameterListMatch of sourceText.matchAll(PARAMETER_LIST_PATTERN)) {
+    const parameterList = parameterListMatch[1];
+
+    if (parameterList === undefined) {
+      continue;
+    }
+
+    for (const parameterMatch of parameterList.matchAll(IDENTIFIER_TOKEN_PATTERN)) {
+      const parameterName = parameterMatch[0];
+
+      if (TYPESCRIPT_IDENTIFIER_KEYWORDS.has(parameterName)) {
+        continue;
+      }
+
+      if (isTypeAnnotationIdentifier(parameterList, parameterMatch.index)) {
+        continue;
+      }
+
+      names.add(parameterName);
+    }
+  }
+
+  return names;
+}
+
+function shouldSkipIdentifierReference(
+  sourceText: string,
+  targetName: string,
+  startOffset: number,
+  endOffset: number,
+  ignoredSpans: readonly IgnoredIdentifierSpan[],
+  ignoredNames: ReadonlySet<string>
+): boolean {
+  return TYPESCRIPT_IDENTIFIER_KEYWORDS.has(targetName)
+    || ignoredNames.has(targetName)
+    || isOffsetInsideIgnoredSpan(startOffset, endOffset, ignoredSpans)
+    || isIdentifierInPropertyAccess(sourceText, startOffset)
+    || isJsxTagIdentifier(sourceText, startOffset)
+    || isJsxTextIdentifier(sourceText, startOffset, endOffset)
+    || isObjectLiteralKey(sourceText, endOffset)
+    || isTypeAnnotationIdentifier(sourceText, startOffset)
+    || isStringOrCommentContext(sourceText, startOffset);
+}
+
+function isOffsetInsideIgnoredSpan(
+  startOffset: number,
+  endOffset: number,
+  ignoredSpans: readonly IgnoredIdentifierSpan[]
+): boolean {
+  return ignoredSpans.some((span) => span.startOffset <= startOffset && endOffset <= span.endOffset);
+}
+
+function isIdentifierInPropertyAccess(sourceText: string, startOffset: number): boolean {
+  return sourceText[startOffset - 1] === '.';
+}
+
+function isJsxTagIdentifier(sourceText: string, startOffset: number): boolean {
+  const previousNonWhitespace = findPreviousNonWhitespace(sourceText, startOffset - 1);
+
+  if (previousNonWhitespace === undefined) {
+    return false;
+  }
+
+  if (sourceText[previousNonWhitespace] === '<') {
+    return true;
+  }
+
+  return sourceText[previousNonWhitespace] === '/' && sourceText[previousNonWhitespace - 1] === '<';
+}
+
+function isJsxTextIdentifier(sourceText: string, startOffset: number, endOffset: number): boolean {
+  const previousNonWhitespace = findPreviousNonWhitespace(sourceText, startOffset - 1);
+  const nextNonWhitespace = findNextNonWhitespace(sourceText, endOffset);
+
+  if (previousNonWhitespace === undefined || nextNonWhitespace === undefined) {
+    return false;
+  }
+
+  return sourceText[previousNonWhitespace] === '>' && sourceText[nextNonWhitespace] === '<';
+}
+
+function isObjectLiteralKey(sourceText: string, endOffset: number): boolean {
+  const nextNonWhitespace = findNextNonWhitespace(sourceText, endOffset);
+  return nextNonWhitespace !== undefined && sourceText[nextNonWhitespace] === ':';
+}
+
+function isTypeAnnotationIdentifier(sourceText: string, startOffset: number): boolean {
+  const previousNonWhitespace = findPreviousNonWhitespace(sourceText, startOffset - 1);
+  return previousNonWhitespace !== undefined && sourceText[previousNonWhitespace] === ':';
+}
+
+function isStringOrCommentContext(sourceText: string, startOffset: number): boolean {
+  let quote: string | undefined;
+  let escaped = false;
+  let lineComment = false;
+  let blockComment = false;
+
+  for (let index = 0; index < startOffset; index += 1) {
+    const char = sourceText[index];
+    const nextChar = sourceText[index + 1];
+
+    if (char === undefined) {
+      continue;
+    }
+
+    if (lineComment) {
+      if (char === '\n') {
+        lineComment = false;
+      }
+      continue;
+    }
+
+    if (blockComment) {
+      if (char === '*' && nextChar === '/') {
+        blockComment = false;
+        index += 1;
+      }
+      continue;
+    }
+
+    if (quote !== undefined) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (char === '\\') {
+        escaped = true;
+        continue;
+      }
+
+      if (char === quote) {
+        quote = undefined;
+      }
+
+      continue;
+    }
+
+    if (char === '/' && nextChar === '/') {
+      lineComment = true;
+      index += 1;
+      continue;
+    }
+
+    if (char === '/' && nextChar === '*') {
+      blockComment = true;
+      index += 1;
+      continue;
+    }
+
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+    }
+  }
+
+  return quote !== undefined || lineComment || blockComment;
+}
+
+function inferReferenceKind(sourceText: string, endOffset: number): ParserCoreReferenceKind {
+  const nextNonWhitespace = findNextNonWhitespace(sourceText, endOffset);
+
+  return nextNonWhitespace !== undefined && sourceText[nextNonWhitespace] === '(' ? 'call' : 'identifier';
+}
+
+function createReferenceRecord(
+  locationIndex: SourceLocationIndex,
+  targetName: string,
+  kind: ParserCoreReferenceKind,
+  startOffset: number,
+  endOffset: number
+): ParserCoreReferenceRecord {
+  return {
+    schemaVersion: PARSER_CORE_REFERENCE_SCHEMA_VERSION,
+    kind,
+    targetName,
+    range: createRangeFromOffsets(locationIndex, startOffset, endOffset)
+  };
+}
+
+function findDeclarationNameOffset(sourceText: string, declaration: TextMatch): number | undefined {
+  const offset = sourceText.indexOf(declaration.name, declaration.statementStart);
+
+  if (offset < 0 || offset >= declaration.statementEnd) {
+    return undefined;
+  }
+
+  return offset;
+}
+
+function findNextNonWhitespace(sourceText: string, startOffset: number): number | undefined {
+  for (let index = startOffset; index < sourceText.length; index += 1) {
+    const char = sourceText[index];
+
+    if (char !== undefined && !/\s/.test(char)) {
+      return index;
+    }
+  }
+
+  return undefined;
+}
+
+function findPreviousNonWhitespace(sourceText: string, startOffset: number): number | undefined {
+  for (let index = startOffset; index >= 0; index -= 1) {
+    const char = sourceText[index];
+
+    if (char !== undefined && !/\s/.test(char)) {
+      return index;
+    }
+  }
+
+  return undefined;
 }
 
 function createSymbolRecord(locationIndex: SourceLocationIndex, declaration: TextMatch): ParserCoreSymbolRecord {

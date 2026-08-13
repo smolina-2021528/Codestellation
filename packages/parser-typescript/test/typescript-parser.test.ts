@@ -69,12 +69,19 @@ describe('typescript parser', () => {
       ['FeatureFlag', 'type-only'],
       ['UserId', 'type-only']
     ]);
+    expect(result.references.map((reference) => [
+      reference.targetName,
+      reference.kind
+    ])).toEqual([
+      ['answer', 'identifier'],
+      ['createConfig', 'call']
+    ]);
     expect(result.summary).toEqual({
       diagnosticCount: 0,
       symbolCount: 5,
       importCount: 2,
       exportCount: 5,
-      referenceCount: 0
+      referenceCount: 2
     });
   });
 
@@ -88,6 +95,7 @@ describe('typescript parser', () => {
     expect(result.parser.language).toBe('tsx');
     expect(result.symbols.map((symbol) => symbol.name)).toEqual(['App']);
     expect(result.exports.map((exportRecord) => exportRecord.name)).toEqual(['App']);
+    expect(result.references).toEqual([]);
   });
 
   it('returns recoverable diagnostics for syntax errors without throwing', () => {
