@@ -126,15 +126,16 @@ describe('Codestellation CLI local index flow', () => {
         'helper'
       ]);
       expect('declaresEdges' in result.graph ? result.graph.declaresEdges : []).toHaveLength(2);
-      expect('referencesEdges' in result.graph ? result.graph.referencesEdges : []).toEqual([]);
-      expect('unresolvedSymbolReferences' in result.graph ? result.graph.unresolvedSymbolReferences.map((reference) => [
+      expect('referencesEdges' in result.graph ? result.graph.referencesEdges : []).toHaveLength(1);
+      expect('resolvedImportedSymbolReferences' in result.graph ? result.graph.resolvedImportedSymbolReferences.map((reference) => [
         reference.filePath,
         reference.targetName,
         reference.referenceKind,
-        reference.reason
+        reference.importedFromFilePath
       ]) : []).toEqual([
-        ['src/index.ts', 'helper', 'call', 'no-local-symbol-match']
+        ['src/index.ts', 'helper', 'call', 'src/util.ts']
       ]);
+      expect('unresolvedSymbolReferences' in result.graph ? result.graph.unresolvedSymbolReferences : []).toEqual([]);
     });
   });
 

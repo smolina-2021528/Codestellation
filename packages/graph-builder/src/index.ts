@@ -5,3 +5,5 @@ export * from './symbol-nodes.js';
 
 export * from './relative-import-edges.js';
 export * from './reference-edges.js';
+
+export * from './imported-symbol-references.js';

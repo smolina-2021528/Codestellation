@@ -42,6 +42,7 @@ import {
   type RepositoryScanInput
 } from '@codestellation/repository-scanner';
 import {
+  buildImportedSymbolReferenceGraphFromReferenceGraph,
   buildImportExportGraphFromStaticAnalysis,
   buildPackageDependencyGraphFromProjectFileGraph,
   buildReferenceGraphFromParserResults,
@@ -49,6 +50,7 @@ import {
   buildSymbolGraphFromParserResults,
   buildProjectFileGraphFromRepositoryStructure,
   toSerializableGraphBuilderPackageDependencyGraphResult,
+  type GraphBuilderImportedSymbolGraphResult,
   type GraphBuilderImportExportGraphResult,
   type GraphBuilderPackageDependencyGraphResult,
   type GraphBuilderReferenceGraphResult,
@@ -121,7 +123,7 @@ export interface CliLocalFolderGraphExport {
   readonly command: 'index-local';
   readonly generatedAt: string;
   readonly input: CliLocalFolderGraphExportInput;
-  readonly graph: GraphBuilderPackageDependencyGraphResult | GraphBuilderImportExportGraphResult | GraphBuilderSymbolGraphResult | GraphBuilderRelativeImportGraphResult | GraphBuilderReferenceGraphResult;
+  readonly graph: GraphBuilderPackageDependencyGraphResult | GraphBuilderImportExportGraphResult | GraphBuilderSymbolGraphResult | GraphBuilderRelativeImportGraphResult | GraphBuilderReferenceGraphResult | GraphBuilderImportedSymbolGraphResult;
   readonly sourceTextParsing?: CliLocalFolderSourceTextParsingExport;
   readonly summary: CliLocalFolderGraphExportSummary;
 }
@@ -190,11 +192,13 @@ export async function createLocalFolderGraphExport(
     : undefined;
   const graph = sourceTextParsing === undefined
     ? packageGraph
-    : buildReferenceGraphFromParserResults(
-        buildRelativeImportGraphFromSymbolGraph(
-          buildSymbolGraphFromParserResults(
-            buildImportExportGraphFromStaticAnalysis(packageGraph, sourceTextParsing.analysis),
-            sourceTextParsing.parseBatch
+    : buildImportedSymbolReferenceGraphFromReferenceGraph(
+        buildReferenceGraphFromParserResults(
+          buildRelativeImportGraphFromSymbolGraph(
+            buildSymbolGraphFromParserResults(
+              buildImportExportGraphFromStaticAnalysis(packageGraph, sourceTextParsing.analysis),
+              sourceTextParsing.parseBatch
+            )
           )
         )
       );
